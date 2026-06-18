@@ -1,21 +1,8 @@
 from django.db import models
 from imagekit.models import ProcessedImageField
 from imagekit.processors import ResizeToFill
+from apps.owners.models import Owner
 
-class Owner(models.Model):
-    """
-    Stores pet owner information.
-    """
-    first_name = models.CharField(max_length=100)
-    last_name = models.CharField(max_length=100)
-    phone_number = models.CharField(max_length=20)
-    registration_date = models.DateField(auto_now_add=True)
-    email = models.EmailField(max_length=254, blank=True)
-    address = models.CharField(max_length=100, blank=True)
-
-    def __str__(self):
-        return f'{self.first_name} {self.last_name}'
-    
 class Pet(models.Model):
     """
     Stores pet information, linked to an Owner.
@@ -43,7 +30,7 @@ class Pet(models.Model):
     
     # Date of birth — use date_of_birth if known, birth_year if only year is known
     date_of_birth = models.DateField(blank=True, null=True)
-    birth_of_year = models.PositiveSmallIntegerField(null=True, blank=True)
+    birth_year = models.PositiveSmallIntegerField(null=True, blank=True)
     
     # Additional info
     description = models.TextField(blank=True)
