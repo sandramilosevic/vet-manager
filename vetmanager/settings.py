@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "apps.clinics",
     "apps.owners",
     "apps.pets",
+    "rest_framework",
 ]
 
 MIDDLEWARE = [

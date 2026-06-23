@@ -22,7 +22,11 @@ class User(AbstractUser):
     # String reference 'clinics.ClinicGroup' avoids a circular import,
     # since ClinicGroup lives in a different app.
     clinic = models.ForeignKey(
-        "clinics.ClinicGroup", on_delete=models.CASCADE, related_name="users"
+        "clinics.ClinicGroup",
+        on_delete=models.CASCADE,
+        related_name="users",
+        null=True,
+        blank=True,
     )
 
     email = models.EmailField(unique=True)
