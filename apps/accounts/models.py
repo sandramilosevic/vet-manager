@@ -67,9 +67,6 @@ class Invitation(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
     expires_at = models.DateTimeField()
 
-    class Meta:
-        unique_together = ["email", "clinic"]
-
     def __str__(self):
         return f"{self.clinic.name}, {self.email}"
 
