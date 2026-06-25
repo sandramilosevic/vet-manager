@@ -46,6 +46,7 @@ INSTALLED_APPS = [
     "apps.clinics",
     "apps.owners",
     "apps.pets",
+    "apps.medical_records",
     "rest_framework",
     "rest_framework_simplejwt",
     "rest_framework_simplejwt.token_blacklist",
@@ -159,5 +160,5 @@ SIMPLE_JWT = {
     "BLACKLIST_AFTER_ROTATION": True,
     "ALGORITHM": "HS256",
     "SIGNING_KEY": SECRET_KEY,
-    "TOKEN_OBTAIN_SERIALIZER": "my_app.serializers.MyTokenObtainPairSerializer",
+    "TOKEN_OBTAIN_SERIALIZER": "apps.accounts.serializers.MyTokenObtainPairSerializer",
 }

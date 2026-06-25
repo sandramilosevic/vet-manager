@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Pet
+from .models import Pet, Vaccination
 
 
 class PetSerializer(serializers.ModelSerializer):
@@ -18,5 +18,18 @@ class PetSerializer(serializers.ModelSerializer):
             "birth_year",
             "description",
             "image",
+        ]
+        read_only_fields = ["id"]
+
+
+class VaccinationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Vaccination
+        fields = [
+            "id",
+            "pet",
+            "vaccine_name",
+            "date_given",
+            "next_due",
         ]
         read_only_fields = ["id"]
