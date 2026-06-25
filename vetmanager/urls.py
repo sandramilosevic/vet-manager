@@ -8,5 +8,5 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path("auth/login/", TokenObtainPairView.as_view()),
     path("auth/token/refresh/", TokenRefreshView.as_view()),
-    path("accounts/", include("accounts.urls")),
+    path("accounts/", include("apps.accounts.urls")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
