@@ -2,7 +2,6 @@ from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from .models import Invitation
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
-from rest_framework_simplejwt.views import TokenObtainPairView
 
 User = get_user_model()
 
@@ -34,7 +33,7 @@ class InvitationSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "token", "status", "invited_by", "expires_at"]
 
 
-class MyTokenObtaionPairSerializer(TokenObtainPairSerializer):
+class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
         token = super().get_token(user)

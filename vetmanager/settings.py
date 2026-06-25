@@ -43,7 +43,6 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "imagekit",
     "apps.accounts",
-    "apps.appointments",
     "apps.clinics",
     "apps.owners",
     "apps.pets",
