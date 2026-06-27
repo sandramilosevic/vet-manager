@@ -6,14 +6,18 @@ from apps.pets.models import Pet
 class MedicalRecord(models.Model):
 
     # Pet info
-    pet = models.ForeignKey(Pet, on_delete=models.PROTECT)
+    pet = models.ForeignKey(
+        Pet, on_delete=models.PROTECT, related_name="medical_records"
+    )
 
     # Date of visit or updating record
     visit_date = models.DateField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     # Name of vet
-    vet = models.ForeignKey(User, on_delete=models.PROTECT)
+    vet = models.ForeignKey(
+        User, on_delete=models.PROTECT, related_name="medical_records"
+    )
 
     # Diagnosis
     diagnosis = models.TextField()

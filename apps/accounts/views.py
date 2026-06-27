@@ -1,10 +1,51 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from rest_framework import status
-from .serializers import InvitationSerializer
+from rest_framework import status, generics, permissions
+from .serializers import InvitationSerializer, UserSerializer
 from .services import send_invitation, accept_invitation, revoke_invitation
 from .permissions import IsAdmin
+from .models import User
+
+
+class UserListView(generics.ListAPIView):
+    """API for GET (list) method. Only admins can see all users in their clinic."""
+
+    serializer_class = UserSerializer
+    # only admins can see list of users
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+
+    def get_queryset(self):
+        # return only users from the current user's clinic
+        return User.objects.select_related("clinic").filter(
+            clinic=self.request.user.clinic
+        )
+
+
+class UserDetailView(generics.RetrieveUpdateAPIView):
+    """API for GET (single user) and PUT/PATCH (update) methods. Only admins can update users."""
+
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+
+    def get_queryset(self):
+        # admin can only see and update users from his own clinic
+        return User.objects.select_related("clinic").filter(
+            clinic=self.request.user.clinic
+        )
+
+
+class UserDestroyView(generics.DestroyAPIView):
+    """API for DELETE method. Only admins can delete users."""
+
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+
+    def get_queryset(self):
+        # admin can only delete users from his own clinic
+        return User.objects.select_related("clinic").filter(
+            clinic=self.request.user.clinic
+        )
 
 
 class SendInvitationView(APIView):

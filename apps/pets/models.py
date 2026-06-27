@@ -22,7 +22,7 @@ class Pet(models.Model):
         OTHER = "other"
 
     # Ownership
-    owner = models.ForeignKey(Owner, on_delete=models.CASCADE)
+    owner = models.ForeignKey(Owner, on_delete=models.CASCADE, related_name="owner")
 
     # Basic info
     name = models.CharField(max_length=100)
