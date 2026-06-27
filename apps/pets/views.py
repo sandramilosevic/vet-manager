@@ -13,7 +13,9 @@ class PetListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         # filtering pets by clinic of current user (multi-tenant protection)
-        return Pet.objects.filter(owner__clinic=self.request.user.clinic)
+        return Pet.objects.select_related("owner").filter(
+            owner__clinic=self.request.user.clinic
+        )
 
     def perform_create(self, serializer):
         # saving object into database
@@ -28,7 +30,9 @@ class PetDetailView(generics.RetrieveUpdateAPIView):
 
     def get_queryset(self):
         # multi-tenant protection, vet only sees pets from his clinic
-        return Pet.objects.filter(owner__clinic=self.request.user.clinic)
+        return Pet.objects.select_related("owner").filter(
+            owner__clinic=self.request.user.clinic
+        )
 
 
 class PetDestroyView(generics.DestroyAPIView):
@@ -40,7 +44,9 @@ class PetDestroyView(generics.DestroyAPIView):
 
     def get_queryset(self):
         # admin can only delete pets from his own clinic
-        return Pet.objects.filter(owner__clinic=self.request.user.clinic)
+        return Pet.objects.select_related("owner").filter(
+            owner__clinic=self.request.user.clinic
+        )
 
 
 class VaccinationListCreateView(generics.ListCreateAPIView):
@@ -51,7 +57,9 @@ class VaccinationListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         # filtering vaccinations through pet → owner → clinic chain
-        return Vaccination.objects.filter(pet__owner__clinic=self.request.user.clinic)
+        return Vaccination.objects.select_related("pet__owner").filter(
+            pet__owner__clinic=self.request.user.clinic
+        )
 
 
 class VaccinationDetailView(generics.RetrieveUpdateAPIView):
@@ -62,7 +70,9 @@ class VaccinationDetailView(generics.RetrieveUpdateAPIView):
 
     def get_queryset(self):
         # multi-tenant protection, vet only sees vaccinations from his clinic
-        return Vaccination.objects.filter(pet__owner__clinic=self.request.user.clinic)
+        return Vaccination.objects.select_related("pet__owner").filter(
+            pet__owner__clinic=self.request.user.clinic
+        )
 
 
 class VaccinationDestroyView(generics.DestroyAPIView):
@@ -73,4 +83,6 @@ class VaccinationDestroyView(generics.DestroyAPIView):
 
     def get_queryset(self):
         # admin can only delete vaccinations from his own clinic
-        return Vaccination.objects.filter(pet__owner__clinic=self.request.user.clinic)
+        return Vaccination.objects.select_related("pet__owner").filter(
+            pet__owner__clinic=self.request.user.clinic
+        )
