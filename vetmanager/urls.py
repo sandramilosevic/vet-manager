@@ -9,4 +9,8 @@ urlpatterns = [
     path("auth/login/", TokenObtainPairView.as_view()),
     path("auth/token/refresh/", TokenRefreshView.as_view()),
     path("accounts/", include("apps.accounts.urls")),
+    path("clinics/", include("apps.clinics.urls")),
+    path("owners/", include("apps.owners.urls")),
+    path("pets/", include("apps.pets.urls")),
+    path("medical-records/", include("apps.medical_records.urls")),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

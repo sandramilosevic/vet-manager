@@ -22,27 +22,13 @@ class UserListView(generics.ListAPIView):
         )
 
 
-class UserDetailView(generics.RetrieveUpdateAPIView):
-    """API for GET (single user) and PUT/PATCH (update) methods. Only admins can update users."""
+class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
+    """API for GET, PUT/PATCH and DELETE methods. Only admins can manage users."""
 
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated, IsAdmin]
 
     def get_queryset(self):
-        # admin can only see and update users from his own clinic
-        return User.objects.select_related("clinic").filter(
-            clinic=self.request.user.clinic
-        )
-
-
-class UserDestroyView(generics.DestroyAPIView):
-    """API for DELETE method. Only admins can delete users."""
-
-    serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated, IsAdmin]
-
-    def get_queryset(self):
-        # admin can only delete users from his own clinic
         return User.objects.select_related("clinic").filter(
             clinic=self.request.user.clinic
         )
