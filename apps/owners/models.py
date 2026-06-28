@@ -8,9 +8,13 @@ class Owner(models.Model):
 
     # clinic that owner belongs to (multi-tenant)
     clinic = models.ForeignKey(
-        "clinics.ClinicGroup", on_delete=models.CASCADE, related_name="owners"
+        "clinics.ClinicGroup",
+        on_delete=models.CASCADE,
+        related_name="owners",
+        null=True,
+        blank=True,
     )
-    
+
     first_name = models.CharField(max_length=100)
     last_name = models.CharField(max_length=100)
     phone_number = models.CharField(max_length=20)
