@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import ClinicGroup, Clinic, WorkingHours
+from .models import ClinicGroup, Clinic
 
 
 class ClinicGroupSerializer(serializers.ModelSerializer):
@@ -20,10 +20,3 @@ class ClinicSerializer(serializers.ModelSerializer):
         read_only_fields = ["id"]
 
 
-class WorkingHoursSerializer(serializers.ModelSerializer):
-    """Serializes working hours per weekday for a clinic."""
-
-    class Meta:
-        model = WorkingHours
-        fields = ["id", "clinic", "weekday", "start_time", "end_time"]
-        read_only_fields = ["id"]

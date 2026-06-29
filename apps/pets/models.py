@@ -2,6 +2,7 @@ from django.db import models
 from imagekit.models import ProcessedImageField
 from imagekit.processors import ResizeToFill
 from apps.owners.models import Owner
+from django.core.exceptions import ValidationError
 
 
 class Pet(models.Model):
@@ -22,7 +23,7 @@ class Pet(models.Model):
         OTHER = "other"
 
     # Ownership
-    owner = models.ForeignKey(Owner, on_delete=models.CASCADE, related_name="owner")
+    owner = models.ForeignKey(Owner, on_delete=models.CASCADE, related_name="pets")
 
     # Basic info
     name = models.CharField(max_length=100)
@@ -48,6 +49,11 @@ class Pet(models.Model):
         null=True,
         blank=True,
     )
+
+    def clean(self):
+        if self.date_of_birth and self.birth_year:
+            if self.date_of_birth.year != self.birth_year:
+                raise ValidationError("birth_year must match the year in date_of_birth")
 
     def __str__(self):
         return f"{self.name} ({self.owner})"
