@@ -33,7 +33,7 @@ class User(AbstractUser):
     role = models.CharField(max_length=20, choices=ROLES, default="VET")
 
     def __str__(self):
-        return self.email
+        return self.username
 
 
 class Invitation(models.Model):

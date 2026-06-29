@@ -1,0 +1,4 @@
+$kind: http-request
+url: "{{base_url}}/pets/5/"
+method: DELETE
+order: 4494256613218602

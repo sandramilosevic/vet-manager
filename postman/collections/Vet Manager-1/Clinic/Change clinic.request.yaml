@@ -1,0 +1,12 @@
+$kind: http-request
+name: Change clinic
+url: "{{base_url}}/clinics/"
+method: PATCH
+body:
+  type: json
+  content: "{\r
+
+    \    \"name\": \"Test Clinic Updated\"\r
+
+    }"
+order: 1160705024763746

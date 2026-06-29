@@ -1,0 +1,8 @@
+$kind: http-request
+name: List of medical records
+url: "{{base_url}}/medical-records/"
+method: GET
+body:
+  type: json
+  content: ""
+order: 3552149882472091

@@ -19,3 +19,16 @@ staticfiles/
 *.sql 
 *.dump
 pgdata/
+
+.postman/
+postman/environments/
+postman/flows/
+postman/mocks/
+postman/specs/
+
+.pytest_cache/
+htmlcov/
+.coverage
+
+.DS_Store
+Thumbs.db

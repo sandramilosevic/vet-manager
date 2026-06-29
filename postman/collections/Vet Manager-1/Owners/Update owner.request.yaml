@@ -1,0 +1,11 @@
+$kind: http-request
+url: "{{base_url}}/owners/4/"
+method: PATCH
+body:
+  type: json
+  content: "{\r
+
+    \    \"address\": \"Beogradska\"\r
+
+    }"
+order: 3154707579434875

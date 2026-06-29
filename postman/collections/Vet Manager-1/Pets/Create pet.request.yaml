@@ -1,0 +1,25 @@
+$kind: http-request
+url: "{{base_url}}/pets/"
+method: POST
+body:
+  type: json
+  content: "{      \"owner\": 2,\r
+
+    \        \"name\": \"Dzukki\",\r
+
+    \        \"species\": \"dog\",\r
+
+    \        \"gender\": \"male\",\r
+
+    \        \"breed\": \"Maltese\",\r
+
+    \        \"date_of_birth\": \"2026-06-29\",\r
+
+    \        \"birth_year\": 2026,\r
+
+    \        \"description\": \"\",\r
+
+    \        \"image\": null\r
+
+    \    }"
+order: 176986057016128

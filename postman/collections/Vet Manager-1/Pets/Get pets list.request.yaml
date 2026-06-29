@@ -1,0 +1,5 @@
+$kind: http-request
+name: Get pets list
+url: "{{base_url}}/pets/"
+method: GET
+order: 1782737559900

@@ -1,0 +1,8 @@
+$kind: http-request
+name: Update user
+url: "{{base_url}}/accounts/users/5/"
+method: PATCH
+body:
+  type: json
+  content: "{\r\n    \"role\": \"VET\"\r\n}"
+order: 2451885797218695

@@ -1,0 +1,5 @@
+$kind: http-request
+name: Get single pet
+url: "{{base_url}}/pets/5/"
+method: GET
+order: 3550472068995914

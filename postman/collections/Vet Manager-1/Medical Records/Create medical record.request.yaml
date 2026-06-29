@@ -1,0 +1,26 @@
+$kind: http-request
+name: Create medical record
+url: "{{base_url}}/medical-records/"
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \    \"pet\": 2,\r
+
+    \    \"visit_date\": \"2026-06-29\",\r
+
+    \    \"diagnosis\": \"Infection\",\r
+
+    \    \"meds\": \"Amoxicillin 250mg\",\r
+
+    \    \"treatment_notes\": \"Clean ears daily, apply drops twice a day\",\r
+
+    \    \"weight\": \"12.50\",\r
+
+    \    \"temperature\": \"38.5\",\r
+
+    \    \"warnings\": \"Allergic to penicillin\"\r
+
+    }"
+order: 1782735156488

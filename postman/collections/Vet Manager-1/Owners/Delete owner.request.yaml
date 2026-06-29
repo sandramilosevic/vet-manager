@@ -1,0 +1,5 @@
+$kind: http-request
+name: Delete owner
+url: "{{base_url}}/owners/4/"
+method: DELETE
+order: 3188988505712000

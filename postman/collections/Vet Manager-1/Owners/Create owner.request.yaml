@@ -1,0 +1,21 @@
+$kind: http-request
+url: "{{base_url}}/owners/"
+method: POST
+body:
+  type: json
+  content: "    {\r
+
+    \        \"first_name\": \"Name\",\r
+
+    \        \"last_name\": \"Lasr\",\r
+
+    \        \"phone_number\": \"012321341\",\r
+
+    \        \"registration_date\": \"2026-06-29\",\r
+
+    \        \"email\": \"gmail@gmail.com\",\r
+
+    \        \"address\": \"Kneza Miloša\"\r
+
+    \    }"
+order: 2327397575689158

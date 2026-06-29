@@ -1,0 +1,8 @@
+$kind: http-request
+name: Get clinic
+url: "{{base_url}}/clinics/"
+method: GET
+body:
+  type: json
+  content: "{\r\n    \"username\": \"test1\"\r\n}"
+order: 1782735137894

@@ -1,13 +1,13 @@
 from rest_framework import generics, permissions
 from .models import Clinic
-from .serializers import ClinicSerializer
+from .serializers import ClinicGroupSerializer
 from apps.accounts.permissions import IsAdmin
 
 
 class ClinicView(generics.RetrieveUpdateAPIView):
     """API for GET (all users) and PUT/PATCH (admin only) methods."""
 
-    serializer_class = ClinicSerializer
+    serializer_class = ClinicGroupSerializer
 
     def get_permissions(self):
         if self.request.method in ["PUT", "PATCH"]:
@@ -16,5 +16,3 @@ class ClinicView(generics.RetrieveUpdateAPIView):
 
     def get_object(self):
         return self.request.user.clinic
-
-

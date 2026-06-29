@@ -1,0 +1,5 @@
+$kind: http-request
+name: List of users
+url: "{{base_url}}/accounts/users/"
+method: GET
+order: 934089008293898

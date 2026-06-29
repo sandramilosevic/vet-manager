@@ -1,0 +1,20 @@
+$kind: http-request
+name: Login Request
+url: "{{base_url}}/auth/login/"
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \    \"username\": \"vet1\",\r
+
+    \    \"password\": \"vet\"\r
+
+    }"
+scripts:
+  - type: afterResponse
+    code: "const json = pm.response.json();\r
+
+      pm.collectionVariables.set(\"access_token\", json.access.trim());"
+    language: text/javascript
+order: 1782735055143

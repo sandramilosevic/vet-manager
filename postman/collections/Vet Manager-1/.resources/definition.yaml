@@ -1,0 +1,15 @@
+$kind: collection
+name: Vet Manager
+variables:
+  access_token: ""
+scripts:
+  - type: http:afterResponse
+    code: "const json = pm.response.json();\r
+
+      pm.collectionVariables.set(\"access_token\", json.access.trim());"
+auth:
+  - id: 590d50f7-8670-4ef2-a94a-858106aa45bb
+    type: bearer
+    name: Bearer Token
+    credentials:
+      token: "{{access_token}}"
