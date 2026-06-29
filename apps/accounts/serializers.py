@@ -18,12 +18,14 @@ class UserSerializer(serializers.ModelSerializer):
 class InvitationSerializer(serializers.ModelSerializer):
     """Serializes invitation data. Token, status, invited_by and expires_at are set by the system."""
 
+    clinic_name = serializers.CharField(source="clinic.name", read_only=True)
+
     class Meta:
         model = Invitation
         fields = [
             "id",
             "email",
-            "clinic",
+            "clinic_name",
             "role",
             "token",
             "status",

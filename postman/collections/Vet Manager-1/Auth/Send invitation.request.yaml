@@ -1,0 +1,15 @@
+$kind: http-request
+url: "{{base_url}}/accounts/invitations/"
+method: POST
+body:
+  type: json
+  content: "{\r
+
+    \    \"email\": \"sandramilosevic0003@gmail.com\",\r
+
+    \    \"role\": \"ADMIN\",\r
+
+    \    \"clinic\":\"Happy Paws Beograd\"\r
+
+    }"
+order: 586407234319005
