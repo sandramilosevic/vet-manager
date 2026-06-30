@@ -1,22 +1,19 @@
 from django.urls import path
-from .views import (
-    SendInvitationView,
-    AcceptInvitationView,
-    RevokeInvitationView,
-    UserListView,
-    UserDetailView,
-)
+from . import views
 
 urlpatterns = [
-    path("users/", UserListView.as_view(), name="user-list"),
-    path("users/<int:pk>/", UserDetailView.as_view(), name="user-detail"),
-    path("invitations/", SendInvitationView.as_view(), name="send-invitation"),
+    path("users/", views.UserListView.as_view(), name="user-list"),
+    path("users/<int:pk>/", views.UserDetailView.as_view(), name="user-detail"),
+    path("invitations/", views.SendInvitationView.as_view(), name="send-invitation"),
     path(
-        "invitations/accept/", AcceptInvitationView.as_view(), name="accept-invitation"
+        "invitations/accept/",
+        views.AcceptInvitationView.as_view(),
+        name="accept-invitation",
     ),
     path(
         "invitations/<int:invitation_id>/revoke/",
-        RevokeInvitationView.as_view(),
+        views.RevokeInvitationView.as_view(),
         name="revoke-invitation",
     ),
+    path("logout/", views.LogoutView.as_view(), name="logout"),
 ]

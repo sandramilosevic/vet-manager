@@ -6,6 +6,8 @@ from .serializers import InvitationSerializer, UserSerializer
 from .services import send_invitation, accept_invitation, revoke_invitation
 from .permissions import IsAdmin
 from .models import User
+from rest_framework_simplejwt.tokens import RefreshToken
+from rest_framework_simplejwt.exceptions import TokenError
 
 
 class UserListView(generics.ListAPIView):
@@ -99,3 +101,28 @@ class RevokeInvitationView(APIView):
             )
         except ValueError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+class LogoutView(APIView):
+    """Blacklists the given refresh token so it can no longer be used to obtain new access tokens."""
+
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        refresh_token = request.data.get("refresh")
+
+        if not refresh_token:
+            return Response(
+                {"error": "Refresh token is required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            RefreshToken(refresh_token).blacklist()
+        except TokenError:
+            return Response(
+                {"error": "Invalid or already blacklisted token"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        return Response(status=status.HTTP_205_RESET_CONTENT)
