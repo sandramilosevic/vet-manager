@@ -1,5 +1,7 @@
 from datetime import timedelta
 from django.conf import settings
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
 from django.core.mail import EmailMultiAlternatives
 from django.db import transaction
 from django.template.loader import render_to_string
@@ -52,6 +54,15 @@ def accept_invitation(token, password):
     # Check if a user with this email already exists to prevent a database IntegrityError.
     if User.objects.filter(email=invitation.email).exists():
         raise ValueError("A user with this email address already exists.")
+
+    # Run the same AUTH_PASSWORD_VALIDATORS used everywhere else in the project.
+    unsaved_user = User(
+        username=invitation.email, email=invitation.email, clinic=invitation.clinic
+    )
+    try:
+        validate_password(password, user=unsaved_user)
+    except ValidationError as e:
+        raise ValueError(" ".join(e.messages))
 
     # Ensure both user creation and invitation status update succeed together.
     with transaction.atomic():

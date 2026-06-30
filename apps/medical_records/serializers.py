@@ -17,3 +17,13 @@ class MedicalRecordSerializer(serializers.ModelSerializer):
             "warnings",
         ]
         read_only_fields = ["id"]
+
+    def validate(self, attrs):
+        pet = attrs.get("pet", getattr(self.instance, "pet", None))
+        request = self.context.get("request")
+        if pet and request and pet.owner.clinic != request.user.clinic:
+            raise serializers.ValidationError(
+                {"pet": "Pet does not belong to your clinic."}
+            )
+
+        return attrs
