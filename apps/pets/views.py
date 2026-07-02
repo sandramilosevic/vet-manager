@@ -2,6 +2,8 @@ from rest_framework import generics, permissions
 from .models import Pet, Vaccination
 from .serializers import PetSerializer, VaccinationSerializer
 from apps.accounts.permissions import IsAdmin
+from .filters import PetFilter, VaccinationFilter
+from django_filters.rest_framework import DjangoFilterBackend
 
 
 class PetListCreateView(generics.ListCreateAPIView):
@@ -9,6 +11,8 @@ class PetListCreateView(generics.ListCreateAPIView):
 
     serializer_class = PetSerializer
     permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = PetFilter
 
     def get_queryset(self):
         # filtering pets by clinic of current user (multi-tenant protection)
@@ -24,6 +28,7 @@ class PetDetailView(generics.RetrieveUpdateDestroyAPIView):
     """API for GET, PUT/PATCH (all users) and DELETE (admin only) methods."""
 
     serializer_class = PetSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
     def get_permissions(self):
         if self.request.method == "DELETE":
@@ -42,6 +47,9 @@ class VaccinationListCreateView(generics.ListCreateAPIView):
 
     serializer_class = VaccinationSerializer
     permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["pet__name", "vaccine_name", "date_given"]
+    filterset_class = VaccinationFilter
 
     def get_queryset(self):
         # filtering vaccinations through pet → owner → clinic chain
