@@ -5,9 +5,6 @@ from rangefilter.filters import DateRangeFilter
 
 @admin.register(MedicalRecord)
 class MedicalRecordAdmin(admin.ModelAdmin):
-    list_display = (
-        "pet",
-        "visit_date",
-    )
-    list_filter = (("visit_date", DateRangeFilter),)
-    search_fields = ("pet__name", "diagnosis")
+    list_display = ["pet", "visit_date"]
+    list_filter = [("visit_date", DateRangeFilter)]
+    search_fields = ["pet__name", "diagnosis"]
