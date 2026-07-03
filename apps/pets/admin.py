@@ -1,5 +1,6 @@
 from django.contrib import admin
 from .models import Pet, Vaccination
+from rangefilter.filters import DateRangeFilter
 
 
 @admin.register(Pet)
@@ -11,5 +12,10 @@ class PetAdmin(admin.ModelAdmin):
 
 @admin.register(Vaccination)
 class VaccinationAdmin(admin.ModelAdmin):
-    list_display = ("pet", "vaccine_name", "date_given", "next_due")
+    list_display = (
+        "pet",
+        "vaccine_name",
+        ("date_given", DateRangeFilter),
+        ("next_due", DateRangeFilter),
+    )
     list_filter = ("vaccine_name",)
