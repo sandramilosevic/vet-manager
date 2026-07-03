@@ -1,6 +1,5 @@
 from django.db import models
 
-
 class Owner(models.Model):
     """
     Stores pet owner information.

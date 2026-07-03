@@ -2,6 +2,9 @@ from rest_framework import generics, permissions
 from .models import Owner
 from .serializers import OwnerSerializer
 from apps.accounts.permissions import IsAdmin
+from .filters import OwnerFilter
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import OrderingFilter
 
 
 class OwnerListCreateView(generics.ListCreateAPIView):
@@ -9,6 +12,9 @@ class OwnerListCreateView(generics.ListCreateAPIView):
 
     serializer_class = OwnerSerializer
     permission_classes = [permissions.IsAuthenticated]
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    filterset_class = OwnerFilter
+    ordering_fields = ["first_name", "last_name", "registration_date"]
 
     def get_queryset(self):
         # filtering owners by clinic of current user (multi-tenant protection)

@@ -48,7 +48,6 @@ class VaccinationListCreateView(generics.ListCreateAPIView):
     serializer_class = VaccinationSerializer
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
-    filterset_fields = ["pet__name", "vaccine_name", "date_given"]
     filterset_class = VaccinationFilter
 
     def get_queryset(self):

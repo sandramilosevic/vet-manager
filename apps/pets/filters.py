@@ -5,9 +5,7 @@ from .models import Pet, Vaccination
 class PetFilter(django_filters.FilterSet):
     class Meta:
         model = Pet
-        # icontains je za upisivanje
-        # exact je za tacno podudaranje, daje se ponudjeno
-
+        # Define the fields that can be filtered and the types of filtering allowed
         fields = {
             "name": ["icontains"],
             "species": ["exact", "icontains"],
@@ -21,6 +19,7 @@ class PetFilter(django_filters.FilterSet):
 class VaccinationFilter(django_filters.FilterSet):
     class Meta:
         model = Vaccination
+        # Define the fields that can be filtered and the types of filtering allowed
         fields = {
             "pet__name": ["icontains"],
             "vaccine_name": ["icontains"],
