@@ -17,6 +17,12 @@ def send_invitation(email, clinic, role, invited_by):
     if invited_by.role != "ADMIN":
         raise ValueError("Only admins can send invitations.")
 
+    if clinic is None:
+        # Invitation.clinic is a required FK (null=False). Without this check,
+        # an admin with no assigned clinic (an edge case the model allows)
+        # would hit an unhandled IntegrityError -> 500 instead of a clean 400.
+        raise ValueError("You must be assigned to a clinic to send invitations.")
+
     # Prevent duplicate active invitations for the same email and clinic combination.
     # This does not block re-inviting after expiration or revocation.
     if Invitation.objects.filter(email=email, clinic=clinic, status="sent").exists():
