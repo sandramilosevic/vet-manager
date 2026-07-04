@@ -8,6 +8,7 @@ from .permissions import IsAdmin
 from .models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
+from rest_framework_simplejwt.views import ScopedRateThrottle, TokenObtainPairView
 
 
 class UserListView(generics.ListAPIView):
@@ -126,3 +127,13 @@ class LogoutView(APIView):
             )
 
         return Response(status=status.HTTP_205_RESET_CONTENT)
+
+
+class ThrottledTokenObtainPairView(TokenObtainPairView):
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "login"  # 10/minute
+
+
+class AcceptInvitationView(APIView):
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "invite-accept"  # 10/minute
