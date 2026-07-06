@@ -160,13 +160,15 @@ REST_FRAMEWORK = {
     # Throttling configuration
     "DEFAULT_THROTTLE_CLASSES": (
         "rest_framework.throttling.AnonRateThrottle",
-        "rest_framework.throttling.UserRateThrottle",
+        "rest_framework.throttling.ScopedRateThrottle",
     ),
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "100/hour",
-        "user": "1000/hour",
-        "login": "10/minute",
-        "invite-accept": "10/minute",
+        "anon": "20/minute",
+        "user": "60/minute",
+        "login": "5/minute",
+        "invite-accept": "10/hour",
+        "invite-send": "20/day",
+        "logout": "10/minute",
     },
 }
 

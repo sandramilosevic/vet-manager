@@ -8,7 +8,8 @@ from .permissions import IsAdmin
 from .models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
-from rest_framework_simplejwt.views import ScopedRateThrottle, TokenObtainPairView
+from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework.throttling import ScopedRateThrottle
 
 
 class UserListView(generics.ListAPIView):
@@ -41,6 +42,8 @@ class SendInvitationView(APIView):
     """Admin sends an invitation to a new user."""
 
     permission_classes = [IsAuthenticated, IsAdmin]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "invite-send"
 
     def post(self, request):
         serializer = InvitationSerializer(data=request.data)
@@ -65,6 +68,8 @@ class AcceptInvitationView(APIView):
     """New user accepts an invitation using a token and sets their password."""
 
     permission_classes = []  # no auth required, user doesn't have account yet
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "invite-accept"
 
     def post(self, request):
         token = request.data.get("token")
@@ -108,6 +113,8 @@ class LogoutView(APIView):
     """Blacklists the given refresh token so it can no longer be used to obtain new access tokens."""
 
     permission_classes = [IsAuthenticated]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "logout"
 
     def post(self, request):
         refresh_token = request.data.get("refresh")
@@ -131,9 +138,4 @@ class LogoutView(APIView):
 
 class ThrottledTokenObtainPairView(TokenObtainPairView):
     throttle_classes = [ScopedRateThrottle]
-    throttle_scope = "login"  # 10/minute
-
-
-class AcceptInvitationView(APIView):
-    throttle_classes = [ScopedRateThrottle]
-    throttle_scope = "invite-accept"  # 10/minute
+    throttle_scope = "login"
