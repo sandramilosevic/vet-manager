@@ -3,7 +3,7 @@ from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.core.mail import EmailMultiAlternatives
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from django.template.loader import render_to_string
 from django.utils import timezone
 from .models import Invitation, User
@@ -18,9 +18,6 @@ def send_invitation(email, clinic, role, invited_by):
         raise ValueError("Only admins can send invitations.")
 
     if clinic is None:
-        # Invitation.clinic is a required FK (null=False). Without this check,
-        # an admin with no assigned clinic (an edge case the model allows)
-        # would hit an unhandled IntegrityError -> 500 instead of a clean 400.
         raise ValueError("You must be assigned to a clinic to send invitations.")
 
     # Prevent duplicate active invitations for the same email and clinic combination.
@@ -45,41 +42,56 @@ def send_invitation(email, clinic, role, invited_by):
 
 def accept_invitation(token, password):
     """
-    Validates the token, creates a new user tied to the clinic,
-    and marks the invitation as accepted.
-    Raises ValueError if the token is invalid, expired, already used, or if the user already exists.
+    Accepts an invitation using a token and sets the user's password.
+    Raises ValueError if the token is invalid, expired, or already used.
     """
-    try:
-        invitation = Invitation.objects.select_related("clinic").get(token=token)
-    except Invitation.DoesNotExist:
-        raise ValueError("Invalid token.")
-
-    if not invitation.is_valid():
-        raise ValueError("Invitation has expired or has already been used.")
-
-    # Check if a user with this email already exists to prevent a database IntegrityError.
-    if User.objects.filter(email=invitation.email).exists():
-        raise ValueError("A user with this email address already exists.")
-
-    # Run the same AUTH_PASSWORD_VALIDATORS used everywhere else in the project.
-    unsaved_user = User(
-        username=invitation.email, email=invitation.email, clinic=invitation.clinic
-    )
-    try:
-        validate_password(password, user=unsaved_user)
-    except ValidationError as e:
-        raise ValueError(" ".join(e.messages))
-
-    # Ensure both user creation and invitation status update succeed together.
     with transaction.atomic():
-        user = User.objects.create_user(
-            username=invitation.email,
-            email=invitation.email,
-            password=password,
-            clinic=invitation.clinic,
-            role=invitation.role,
-        )
+        # select_for_update() locks this invitation row for the duration of the
+        # transaction. A second concurrent request with the same token will block
+        # here until the first request commits (or rolls back), then re-read the
+        # row and see status="accepted" -> clean ValueError instead of a race.
+        try:
+            invitation = (
+                Invitation.objects.select_for_update()
+                .select_related("clinic")
+                .get(token=token)
+            )
+        except Invitation.DoesNotExist:
+            raise ValueError("Invalid token.")
 
+        if not invitation.is_valid():
+            raise ValueError("Invitation has expired or has already been used.")
+
+        # Check if a user with this email already exists to prevent a database IntegrityError.
+        if User.objects.filter(email=invitation.email).exists():
+            raise ValueError("A user with this email address already exists.")
+
+        # Run the same AUTH_PASSWORD_VALIDATORS used everywhere else in the project.
+        unsaved_user = User(
+            username=invitation.email, email=invitation.email, clinic=invitation.clinic
+        )
+        try:
+            validate_password(password, user=unsaved_user)
+        except ValidationError as e:
+            raise ValueError(" ".join(e.messages))
+
+        # Create the new user and mark the invitation as accepted.
+        # The select_for_update() lock above means we're the only request that
+        # can reach this point for this token, but we still guard against the
+        # (separate) case of the email colliding with an unrelated user created
+        # in between our exists() check and now.
+        try:
+            user = User.objects.create_user(
+                username=invitation.email,
+                email=invitation.email,
+                password=password,
+                clinic=invitation.clinic,
+                role=invitation.role,
+            )
+        except IntegrityError:
+            raise ValueError("A user with this email address already exists.")
+
+        # Mark the invitation as accepted to prevent reuse.
         invitation.status = "accepted"
         invitation.save(update_fields=["status", "updated_at"])
 
@@ -95,19 +107,22 @@ def revoke_invitation(invitation_id, requested_by):
     if requested_by.role != "ADMIN":
         raise ValueError("Only admins can revoke invitations.")
 
-    try:
-        # Scoped to the admin's clinic to prevent cross-clinic revocation.
-        invitation = Invitation.objects.get(
-            id=invitation_id, clinic=requested_by.clinic
-        )
-    except Invitation.DoesNotExist:
-        raise ValueError("Invitation not found.")
+    with transaction.atomic():
+        try:
+            # Scoped to the admin's clinic to prevent cross-clinic revocation.
+            # Locked so it can't race with a concurrent accept_invitation() call.
+            invitation = Invitation.objects.select_for_update().get(
+                id=invitation_id, clinic=requested_by.clinic
+            )
+        except Invitation.DoesNotExist:
+            raise ValueError("Invitation not found.")
 
-    if invitation.status != "sent":
-        raise ValueError("Only pending invitations can be revoked.")
+        if invitation.status != "sent":
+            raise ValueError("Only pending invitations can be revoked.")
 
-    invitation.status = "revoked"
-    invitation.save(update_fields=["status", "updated_at"])
+        invitation.status = "revoked"
+        invitation.save(update_fields=["status", "updated_at"])
+
     return invitation
 
 
@@ -126,7 +141,6 @@ def _send_invitation_email(invitation):
 
     subject = f"You've been invited to join {invitation.clinic.name}"
 
-    # Plain text fallback configuration.
     text_content = f"You have been invited to join {invitation.clinic.name} as {invitation.role}. Accept here: {link}"
 
     html_content = render_to_string("accounts/emails/invitation.html", context)
@@ -134,8 +148,8 @@ def _send_invitation_email(invitation):
     email = EmailMultiAlternatives(
         subject,
         text_content,
-        settings.DEFAULT_FROM_EMAIL,  # Configured in settings.py
-        [invitation.email],  # Recipient email address
+        settings.DEFAULT_FROM_EMAIL,
+        [invitation.email],
     )
     email.attach_alternative(html_content, "text/html")
     email.send()
