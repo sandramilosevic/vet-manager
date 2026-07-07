@@ -8,5 +8,4 @@ class ClinicFilter(django_filters.FilterSet):
         fields = {
             "name": ["icontains"],
             "city": ["icontains"],
-            "group": ["exact"],
         }

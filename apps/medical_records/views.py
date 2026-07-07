@@ -14,20 +14,20 @@ class MedicalRecordListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_class = MedicalRecordFilter
-    ordering_fields = ["visit_date"]
+    ordering_fields = ["visit_date", "clinic__name"]
 
     def get_queryset(self):
-        # filtering medical records through pet → owner → clinic chain
+        # Return only medical records for pets whose owners belong to the current user's clinic.
         clinic = getattr(self.request.user, "clinic", None)
         if clinic is None:
             return MedicalRecord.objects.none()
 
-        return MedicalRecord.objects.select_related("pet__owner", "vet").filter(
-            pet__owner__clinic=clinic
-        )
+        return MedicalRecord.objects.select_related(
+            "pet__owner", "vet", "clinic"
+        ).filter(pet__owner__clinic=clinic)
 
     def perform_create(self, serializer):
-        # automatically assign vet from current user on create
+        # Automatically set the vet to the current user when creating a new medical record.
         serializer.save(vet=self.request.user)
 
 
@@ -37,16 +37,17 @@ class MedicalRecordDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = MedicalRecordSerializer
 
     def get_permissions(self):
+        # Only admins can delete medical records; all authenticated users can view and update them.
         if self.request.method == "DELETE":
             return [permissions.IsAuthenticated(), IsAdmin()]
         return [permissions.IsAuthenticated()]
 
     def get_queryset(self):
-        # multi-tenant protection, vet only sees records from his clinic
+        # Return only medical records for pets whose owners belong to the current user's clinic.
         clinic = getattr(self.request.user, "clinic", None)
         if clinic is None:
             return MedicalRecord.objects.none()
 
-        return MedicalRecord.objects.select_related("pet__owner", "vet").filter(
-            pet__owner__clinic=clinic
-        )
+        return MedicalRecord.objects.select_related(
+            "pet__owner", "vet", "clinic"
+        ).filter(pet__owner__clinic=clinic)
