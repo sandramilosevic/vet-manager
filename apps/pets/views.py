@@ -4,6 +4,7 @@ from .serializers import PetSerializer, VaccinationSerializer
 from apps.accounts.permissions import IsAdmin
 from .filters import PetFilter, VaccinationFilter
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.pagination import PageNumberPagination
 
 
 class PetListCreateView(generics.ListCreateAPIView):
@@ -13,6 +14,7 @@ class PetListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
     filterset_class = PetFilter
+    pagination_class = PageNumberPagination
 
     def get_queryset(self):
         # filtering pets by clinic of current user (multi-tenant protection)
@@ -49,6 +51,7 @@ class VaccinationListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
     filterset_class = VaccinationFilter
+    pagination_class = PageNumberPagination
 
     def get_queryset(self):
         # filtering vaccinations through pet → owner → clinic chain

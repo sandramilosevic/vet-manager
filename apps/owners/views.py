@@ -5,6 +5,7 @@ from apps.accounts.permissions import IsAdmin
 from .filters import OwnerFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
+from rest_framework.pagination import PageNumberPagination
 
 
 class OwnerListCreateView(generics.ListCreateAPIView):
@@ -15,6 +16,7 @@ class OwnerListCreateView(generics.ListCreateAPIView):
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_class = OwnerFilter
     ordering_fields = ["first_name", "last_name", "registration_date"]
+    pagination_class = PageNumberPagination
 
     def get_queryset(self):
         # filtering owners by clinic of current user (multi-tenant protection)

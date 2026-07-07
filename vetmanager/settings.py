@@ -171,6 +171,8 @@ REST_FRAMEWORK = {
         "invite-send": "20/day",
         "logout": "10/minute",
     },
+    "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+    "PAGE_SIZE": 15,
 }
 
 SIMPLE_JWT = {

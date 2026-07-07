@@ -5,6 +5,7 @@ from apps.accounts.permissions import IsAdmin
 from .filters import MedicalRecordFilter
 from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.pagination import PageNumberPagination
 
 
 class MedicalRecordListCreateView(generics.ListCreateAPIView):
@@ -15,6 +16,7 @@ class MedicalRecordListCreateView(generics.ListCreateAPIView):
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_class = MedicalRecordFilter
     ordering_fields = ["visit_date", "clinic__name"]
+    pagination_class = PageNumberPagination
 
     def get_queryset(self):
         # Return only medical records for pets whose owners belong to the current user's clinic.

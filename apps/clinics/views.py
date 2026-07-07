@@ -5,6 +5,7 @@ from apps.accounts.permissions import IsAdmin
 from .filters import ClinicFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.exceptions import NotFound
+from rest_framework.pagination import PageNumberPagination
 
 
 class ClinicView(generics.RetrieveUpdateAPIView):
@@ -34,6 +35,7 @@ class ClinicListCreateView(generics.ListCreateAPIView):
     serializer_class = ClinicSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_class = ClinicFilter
+    pagination_class = PageNumberPagination
 
     def get_permissions(self):
         if self.request.method == "POST":
