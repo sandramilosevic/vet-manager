@@ -21,6 +21,8 @@ class Owner(models.Model):
     registration_date = models.DateField(auto_now_add=True)
     email = models.EmailField(max_length=254, blank=True)
     address = models.CharField(max_length=100, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     class Meta:
         # Same email can't be registered twice in the same clinic, but can be registered in different clinics.

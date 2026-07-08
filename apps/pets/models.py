@@ -37,11 +37,8 @@ class Pet(models.Model):
     description = models.TextField(blank=True)
     allergies = models.TextField(blank=True)
     diet = models.CharField(max_length=200, blank=True)
-
-    def clean(self):
-        if self.date_of_birth and self.birth_year:
-            if self.date_of_birth.year != self.birth_year:
-                raise ValidationError("birth_year must match the year in date_of_birth")
+    created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
+    updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     def __str__(self):
         return f"{self.name} ({self.owner})"
