@@ -3,7 +3,7 @@ from .models import Pet, Vaccination
 
 
 class PetSerializer(serializers.ModelSerializer):
-    """Serializes pet data including owner, species, and optional image."""
+    """Serializes pet data including owner, species"""
 
     class Meta:
         model = Pet
@@ -17,7 +17,8 @@ class PetSerializer(serializers.ModelSerializer):
             "date_of_birth",
             "birth_year",
             "description",
-            "image",
+            "allergies",
+            "diet",
         ]
         read_only_fields = ["id"]
 

@@ -1,6 +1,4 @@
 from django.db import models
-from imagekit.models import ProcessedImageField
-from imagekit.processors import ResizeToFill
 from apps.owners.models import Owner
 from django.core.exceptions import ValidationError
 
@@ -39,16 +37,6 @@ class Pet(models.Model):
     description = models.TextField(blank=True)
     allergies = models.TextField(blank=True)
     diet = models.CharField(max_length=200, blank=True)
-
-    # Profile image, resized to 400x400 on upload
-    image = ProcessedImageField(
-        upload_to="pets/",
-        processors=[ResizeToFill(400, 400)],
-        format="JPEG",
-        options={"quality": 85},
-        null=True,
-        blank=True,
-    )
 
     def clean(self):
         if self.date_of_birth and self.birth_year:
