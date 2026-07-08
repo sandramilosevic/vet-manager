@@ -7,7 +7,6 @@ class Owner(models.Model):
     Stores pet owner information.
     """
 
-    # clinic that owner belongs to (multi-tenant)
     clinic = models.ForeignKey(
         "clinics.ClinicGroup",
         on_delete=models.CASCADE,
@@ -24,12 +23,16 @@ class Owner(models.Model):
     address = models.CharField(max_length=100, blank=True)
 
     class Meta:
-        # Same emali can't be registered twice in the same clinic, but can be registered in different clinics
-        models.UniqueConstraint(
-            fields=["email", "clinic"],
-            name="unique_email_per_clinic",
-            condition=~Q(email=""),
-        )
+        # Same email can't be registered twice in the same clinic, but can be registered in different clinics.
+        # condition=~Q(email="") excludes blank emails, since Owner.email is optional (blank=True) and
+        # multiple owners with no email shouldn't collide with each other.
+        constraints = [
+            models.UniqueConstraint(
+                fields=["email", "clinic"],
+                name="unique_email_per_clinic",
+                condition=~Q(email=""),
+            )
+        ]
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"

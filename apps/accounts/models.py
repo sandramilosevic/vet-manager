@@ -37,13 +37,6 @@ class User(AbstractUser):
 
 
 class Invitation(models.Model):
-    """
-    One-time invite token for a clinic. Same email can be invited to
-    different clinics, but not twice to the same one. is_valid() is the
-    single check callers should use before letting a token be used.
-    """
-
-    # left value is stored in DB, right value is shown in forms/admin
     STATUS = [
         ("sent", "Sent"),
         ("accepted", "Accepted"),
@@ -66,6 +59,19 @@ class Invitation(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     expires_at = models.DateTimeField()
+
+    class Meta:
+        """
+        Same email can't be invited twice in the same clinic, but can be invited in different clinics
+        """
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=["email", "clinic"],
+                condition=Q(status="sent"),
+                name="unique_pending_invitation_per_email_per_clinic",
+            )
+        ]
 
     def __str__(self):
         return f"{self.clinic.name}, {self.email}"

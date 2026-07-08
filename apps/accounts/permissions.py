@@ -6,6 +6,17 @@ class IsAdmin(BasePermission):
         return getattr(request.user, "role", None) == "ADMIN"
 
 
+class IsVetOrAdmin(BasePermission):
+    """
+    Restricts write access (create/update) on clinical data — e.g. medical
+    records — to users who are actually qualified to author them. STAFF can
+    still read (via get_queryset scoping + IsSameClinic), just not write.
+    """
+
+    def has_permission(self, request, view):
+        return getattr(request.user, "role", None) in ("VET", "ADMIN")
+
+
 def _resolve_object_clinic(obj):
     """
     Walk the FK chain to find the ClinicGroup a given object belongs to,

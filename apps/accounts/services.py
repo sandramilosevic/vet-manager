@@ -3,16 +3,16 @@ from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.core.mail import EmailMultiAlternatives
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.template.loader import render_to_string
 from django.utils import timezone
 from .models import Invitation, User
 
 
 def send_invitation(email, clinic, role, invited_by):
-    """
-    Creates a new invitation and sends an email to the invited user.
-    Raises ValueError if the caller lacks permission or an active invitation already exists.
+    """Sends an invitation email to a new user, creating an Invitation object in the database.
+    Raises ValueError if the invitation cannot be sent (e.g. duplicate, invalid role,
+    or the inviter is not an admin).
     """
     if invited_by.role != "ADMIN":
         raise ValueError("Only admins can send invitations.")
@@ -23,16 +23,21 @@ def send_invitation(email, clinic, role, invited_by):
     if Invitation.objects.filter(email=email, clinic=clinic, status="sent").exists():
         raise ValueError("An active invitation for this email already exists.")
 
-    with transaction.atomic():
-        invitation = Invitation.objects.create(
-            email=email,
-            clinic=clinic,
-            role=role,
-            invited_by=invited_by,
-            expires_at=timezone.now() + timedelta(days=3),
-        )
+    try:
+        with transaction.atomic():
+            invitation = Invitation.objects.create(
+                email=email,
+                clinic=clinic,
+                role=role,
+                invited_by=invited_by,
+                expires_at=timezone.now() + timedelta(days=3),
+            )
 
-        _send_invitation_email(invitation)
+            _send_invitation_email(invitation)
+    except IntegrityError:
+        # Lost the race: another request created a "sent" invitation for
+        # this email+clinic between our .exists() check and the DB write.
+        raise ValueError("An active invitation for this email already exists.")
 
     return invitation
 
@@ -44,12 +49,7 @@ def accept_invitation(token, password):
 
     Every failure mode that isn't about password strength (bad token,
     expired, already used, or the invited email already having an
-    account) raises the *same* generic message. This is intentional:
-    distinguishing them would let anyone holding — or guessing — a token
-    learn whether a given email address already has an account somewhere
-    on the platform, which is a user-enumeration / cross-tenant info leak.
-    Password-strength errors are safe to reveal, since they say nothing
-    about account existence.
+    account)
     """
     generic_error = "This invitation link is invalid or has expired."
 
