@@ -30,6 +30,10 @@ class MedicalRecordListCreateView(generics.ListCreateAPIView):
 
     def perform_create(self, serializer):
         # Automatically set the vet to the current user when creating a new medical record.
+        if self.request.user.role == "STAFF":
+            raise permissions.PermissionDenied(
+                "Staff members are not allowed to create medical records."
+            )
         serializer.save(vet=self.request.user)
 
 
