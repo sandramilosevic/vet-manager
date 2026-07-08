@@ -1,10 +1,13 @@
 from django.contrib import admin
 from rangefilter.filters import DateRangeFilter
 from .models import Owner
+from apps.accounts.admin import ClinicScopedAdminMixin
 
 
 @admin.register(Owner)
-class OwnerAdmin(admin.ModelAdmin):
+class OwnerAdmin(ClinicScopedAdminMixin, admin.ModelAdmin):
+    clinic_lookup = "clinic"
+
     list_display = [
         "first_name",
         "last_name",
@@ -14,9 +17,3 @@ class OwnerAdmin(admin.ModelAdmin):
     ]
     list_filter = [("registration_date", DateRangeFilter)]
     search_fields = ["first_name", "last_name", "email", "phone_number"]
-
-    def get_queryset(self, request):
-        qs = super().get_queryset(request)
-        if request.user.is_superuser:
-            return qs
-        return qs.filter(clinic=request.user.clinic)

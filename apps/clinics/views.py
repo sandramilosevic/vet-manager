@@ -1,11 +1,10 @@
 from rest_framework import generics, permissions
 from .models import Clinic
 from .serializers import ClinicGroupSerializer, ClinicSerializer
-from apps.accounts.permissions import IsAdmin
+from apps.accounts.permissions import IsAdmin, IsSameClinic
 from .filters import ClinicFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.exceptions import NotFound
-from rest_framework.pagination import PageNumberPagination
 
 
 class ClinicView(generics.RetrieveUpdateAPIView):
@@ -35,7 +34,6 @@ class ClinicListCreateView(generics.ListCreateAPIView):
     serializer_class = ClinicSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_class = ClinicFilter
-    pagination_class = PageNumberPagination
 
     def get_permissions(self):
         if self.request.method == "POST":
@@ -65,8 +63,8 @@ class ClinicDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_permissions(self):
         if self.request.method == "DELETE":
-            return [permissions.IsAuthenticated(), IsAdmin()]
-        return [permissions.IsAuthenticated()]
+            return [permissions.IsAuthenticated(), IsAdmin(), IsSameClinic()]
+        return [permissions.IsAuthenticated(), IsSameClinic()]
 
     def get_queryset(self):
         group = getattr(self.request.user, "clinic", None)

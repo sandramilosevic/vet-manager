@@ -1,10 +1,9 @@
 from rest_framework import generics, permissions
 from .models import Pet, Vaccination
 from .serializers import PetSerializer, VaccinationSerializer
-from apps.accounts.permissions import IsAdmin
+from apps.accounts.permissions import IsAdmin, IsSameClinic
 from .filters import PetFilter, VaccinationFilter
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.pagination import PageNumberPagination
 
 
 class PetListCreateView(generics.ListCreateAPIView):
@@ -14,7 +13,6 @@ class PetListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
     filterset_class = PetFilter
-    pagination_class = PageNumberPagination
 
     def get_queryset(self):
         # filtering pets by clinic of current user (multi-tenant protection)
@@ -30,12 +28,11 @@ class PetDetailView(generics.RetrieveUpdateDestroyAPIView):
     """API for GET, PUT/PATCH (all users) and DELETE (admin only) methods."""
 
     serializer_class = PetSerializer
-    permission_classes = [permissions.IsAuthenticated]
 
     def get_permissions(self):
         if self.request.method == "DELETE":
-            return [permissions.IsAuthenticated(), IsAdmin()]
-        return [permissions.IsAuthenticated()]
+            return [permissions.IsAuthenticated(), IsAdmin(), IsSameClinic()]
+        return [permissions.IsAuthenticated(), IsSameClinic()]
 
     def get_queryset(self):
         # multi-tenant protection, vet only sees pets from his clinic
@@ -51,7 +48,6 @@ class VaccinationListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
     filterset_class = VaccinationFilter
-    pagination_class = PageNumberPagination
 
     def get_queryset(self):
         # filtering vaccinations through pet → owner → clinic chain
@@ -67,8 +63,8 @@ class VaccinationDetailView(generics.RetrieveUpdateDestroyAPIView):
 
     def get_permissions(self):
         if self.request.method == "DELETE":
-            return [permissions.IsAuthenticated(), IsAdmin()]
-        return [permissions.IsAuthenticated()]
+            return [permissions.IsAuthenticated(), IsAdmin(), IsSameClinic()]
+        return [permissions.IsAuthenticated(), IsSameClinic()]
 
     def get_queryset(self):
         # multi-tenant protection, vet only sees vaccinations from his clinic

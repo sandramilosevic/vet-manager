@@ -4,7 +4,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework import status, generics, permissions
 from .serializers import InvitationSerializer, UserSerializer
 from .services import send_invitation, accept_invitation, revoke_invitation
-from .permissions import IsAdmin
+from .permissions import IsAdmin, IsSameClinic
 from .models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
@@ -30,7 +30,7 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
     """API for GET, PUT/PATCH and DELETE methods. Only admins can manage users."""
 
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated, IsAdmin]
+    permission_classes = [permissions.IsAuthenticated, IsAdmin, IsSameClinic]
 
     def get_queryset(self):
         return User.objects.select_related("clinic").filter(

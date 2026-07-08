@@ -3,7 +3,7 @@ from django.conf import settings
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
 from django.core.mail import EmailMultiAlternatives
-from django.db import transaction, IntegrityError
+from django.db import transaction
 from django.template.loader import render_to_string
 from django.utils import timezone
 from .models import Invitation, User
@@ -20,12 +20,9 @@ def send_invitation(email, clinic, role, invited_by):
     if clinic is None:
         raise ValueError("You must be assigned to a clinic to send invitations.")
 
-    # Prevent duplicate active invitations for the same email and clinic combination.
-    # This does not block re-inviting after expiration or revocation.
     if Invitation.objects.filter(email=email, clinic=clinic, status="sent").exists():
         raise ValueError("An active invitation for this email already exists.")
 
-    # Use an atomic transaction to ensure the database rolls back if the email delivery fails.
     with transaction.atomic():
         invitation = Invitation.objects.create(
             email=email,
@@ -42,14 +39,24 @@ def send_invitation(email, clinic, role, invited_by):
 
 def accept_invitation(token, password):
     """
-    Accepts an invitation using a token and sets the user's password.
-    Raises ValueError if the token is invalid, expired, or already used.
+    Validates the token, creates a new user tied to the clinic,
+    and marks the invitation as accepted.
+
+    Every failure mode that isn't about password strength (bad token,
+    expired, already used, or the invited email already having an
+    account) raises the *same* generic message. This is intentional:
+    distinguishing them would let anyone holding — or guessing — a token
+    learn whether a given email address already has an account somewhere
+    on the platform, which is a user-enumeration / cross-tenant info leak.
+    Password-strength errors are safe to reveal, since they say nothing
+    about account existence.
     """
+    generic_error = "This invitation link is invalid or has expired."
+
     with transaction.atomic():
-        # select_for_update() locks this invitation row for the duration of the
-        # transaction. A second concurrent request with the same token will block
-        # here until the first request commits (or rolls back), then re-read the
-        # row and see status="accepted" -> clean ValueError instead of a race.
+        # select_for_update locks the invitation row so two concurrent
+        # requests with the same token can't both pass the validity check
+        # and race to create two users / double-accept the invitation.
         try:
             invitation = (
                 Invitation.objects.select_for_update()
@@ -57,14 +64,16 @@ def accept_invitation(token, password):
                 .get(token=token)
             )
         except Invitation.DoesNotExist:
-            raise ValueError("Invalid token.")
+            raise ValueError(generic_error)
 
         if not invitation.is_valid():
-            raise ValueError("Invitation has expired or has already been used.")
+            raise ValueError(generic_error)
 
-        # Check if a user with this email already exists to prevent a database IntegrityError.
+        # Check if a user with this email already exists to prevent a
+        # database IntegrityError -- but don't say so; use the same
+        # generic error as an invalid/expired token (see docstring).
         if User.objects.filter(email=invitation.email).exists():
-            raise ValueError("A user with this email address already exists.")
+            raise ValueError(generic_error)
 
         # Run the same AUTH_PASSWORD_VALIDATORS used everywhere else in the project.
         unsaved_user = User(
@@ -75,23 +84,14 @@ def accept_invitation(token, password):
         except ValidationError as e:
             raise ValueError(" ".join(e.messages))
 
-        # Create the new user and mark the invitation as accepted.
-        # The select_for_update() lock above means we're the only request that
-        # can reach this point for this token, but we still guard against the
-        # (separate) case of the email colliding with an unrelated user created
-        # in between our exists() check and now.
-        try:
-            user = User.objects.create_user(
-                username=invitation.email,
-                email=invitation.email,
-                password=password,
-                clinic=invitation.clinic,
-                role=invitation.role,
-            )
-        except IntegrityError:
-            raise ValueError("A user with this email address already exists.")
+        user = User.objects.create_user(
+            username=invitation.email,
+            email=invitation.email,
+            password=password,
+            clinic=invitation.clinic,
+            role=invitation.role,
+        )
 
-        # Mark the invitation as accepted to prevent reuse.
         invitation.status = "accepted"
         invitation.save(update_fields=["status", "updated_at"])
 
@@ -107,22 +107,18 @@ def revoke_invitation(invitation_id, requested_by):
     if requested_by.role != "ADMIN":
         raise ValueError("Only admins can revoke invitations.")
 
-    with transaction.atomic():
-        try:
-            # Scoped to the admin's clinic to prevent cross-clinic revocation.
-            # Locked so it can't race with a concurrent accept_invitation() call.
-            invitation = Invitation.objects.select_for_update().get(
-                id=invitation_id, clinic=requested_by.clinic
-            )
-        except Invitation.DoesNotExist:
-            raise ValueError("Invitation not found.")
+    try:
+        invitation = Invitation.objects.get(
+            id=invitation_id, clinic=requested_by.clinic
+        )
+    except Invitation.DoesNotExist:
+        raise ValueError("Invitation not found.")
 
-        if invitation.status != "sent":
-            raise ValueError("Only pending invitations can be revoked.")
+    if invitation.status != "sent":
+        raise ValueError("Only pending invitations can be revoked.")
 
-        invitation.status = "revoked"
-        invitation.save(update_fields=["status", "updated_at"])
-
+    invitation.status = "revoked"
+    invitation.save(update_fields=["status", "updated_at"])
     return invitation
 
 

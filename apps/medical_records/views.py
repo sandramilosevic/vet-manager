@@ -1,11 +1,10 @@
 from rest_framework import generics, permissions
 from .models import MedicalRecord
 from .serializers import MedicalRecordSerializer
-from apps.accounts.permissions import IsAdmin
+from apps.accounts.permissions import IsAdmin, IsSameClinic
 from .filters import MedicalRecordFilter
 from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework.pagination import PageNumberPagination
 
 
 class MedicalRecordListCreateView(generics.ListCreateAPIView):
@@ -15,25 +14,20 @@ class MedicalRecordListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_class = MedicalRecordFilter
-    ordering_fields = ["visit_date", "clinic__name"]
-    pagination_class = PageNumberPagination
+    ordering_fields = ["visit_date"]
 
     def get_queryset(self):
-        # Return only medical records for pets whose owners belong to the current user's clinic.
+        # filtering medical records through pet → owner → clinic chain
         clinic = getattr(self.request.user, "clinic", None)
         if clinic is None:
             return MedicalRecord.objects.none()
 
-        return MedicalRecord.objects.select_related(
-            "pet__owner", "vet", "clinic"
-        ).filter(pet__owner__clinic=clinic)
+        return MedicalRecord.objects.select_related("pet__owner", "vet").filter(
+            pet__owner__clinic=clinic
+        )
 
     def perform_create(self, serializer):
-        # Automatically set the vet to the current user when creating a new medical record.
-        if self.request.user.role == "STAFF":
-            raise permissions.PermissionDenied(
-                "Staff members are not allowed to create medical records."
-            )
+        # automatically assign vet from current user on create
         serializer.save(vet=self.request.user)
 
 
@@ -43,17 +37,16 @@ class MedicalRecordDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = MedicalRecordSerializer
 
     def get_permissions(self):
-        # Only admins can delete medical records; all authenticated users can view and update them.
         if self.request.method == "DELETE":
-            return [permissions.IsAuthenticated(), IsAdmin()]
-        return [permissions.IsAuthenticated()]
+            return [permissions.IsAuthenticated(), IsAdmin(), IsSameClinic()]
+        return [permissions.IsAuthenticated(), IsSameClinic()]
 
     def get_queryset(self):
-        # Return only medical records for pets whose owners belong to the current user's clinic.
+        # multi-tenant protection, vet only sees records from his clinic
         clinic = getattr(self.request.user, "clinic", None)
         if clinic is None:
             return MedicalRecord.objects.none()
 
-        return MedicalRecord.objects.select_related(
-            "pet__owner", "vet", "clinic"
-        ).filter(pet__owner__clinic=clinic)
+        return MedicalRecord.objects.select_related("pet__owner", "vet").filter(
+            pet__owner__clinic=clinic
+        )
