@@ -9,6 +9,6 @@ class MedicalRecordAdmin(ClinicScopedAdminMixin, admin.ModelAdmin):
     clinic_lookup = "pet__owner__clinic"
     clinic_scoped_fk_fields = {"pet": "owner__clinic", "vet": "clinic"}
 
-    list_display = ["pet", "visit_date"]
-    list_filter = [("visit_date", DateRangeFilter)]
+    list_display = ["pet", "vet", "visit_date"]
+    list_filter = [("visit_date", DateRangeFilter), "pet", "vet"]
     search_fields = ["pet__name", "diagnosis"]
