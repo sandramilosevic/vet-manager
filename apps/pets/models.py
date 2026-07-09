@@ -1,6 +1,7 @@
 from django.db import models
 from apps.owners.models import Owner
 from django.core.exceptions import ValidationError
+from simple_history.models import HistoricalRecords
 
 
 class Pet(models.Model):
@@ -37,8 +38,11 @@ class Pet(models.Model):
     description = models.TextField(blank=True)
     allergies = models.TextField(blank=True)
     diet = models.CharField(max_length=200, blank=True)
+
+    # Tracking updates and history
     created_at = models.DateTimeField(auto_now_add=True, null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
+    history = HistoricalRecords()
 
     def __str__(self):
         return f"{self.name} ({self.owner})"
@@ -63,6 +67,9 @@ class Vaccination(models.Model):
     vaccine_name = models.CharField(max_length=100)
     date_given = models.DateField()
     next_due = models.DateField()
+
+    # Saving history
+    history = HistoricalRecords()
 
     def __str__(self):
         return f"{self.vaccine_name}, given: {self.date_given}, next vaccination: {self.next_due}"
