@@ -43,6 +43,17 @@ class Pet(models.Model):
     def __str__(self):
         return f"{self.name} ({self.owner})"
 
+    def clean(self):
+        super().clean()
+        if (
+            self.date_of_birth
+            and self.birth_year
+            and self.date_of_birth.year != self.birth_year
+        ):
+            raise ValidationError(
+                {"birth_year": "birth_year must match the year in date_of_birth"}
+            )
+
 
 class Vaccination(models.Model):
     # Pet FK
