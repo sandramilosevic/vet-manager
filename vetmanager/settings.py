@@ -172,8 +172,13 @@ REST_FRAMEWORK = {
         "invite-send": "20/day",
         "logout": "10/minute",
     },
+    # Pagination (page size is 15)
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 15,
+    # API versioning: version comes from the URL path
+    "DEFAULT_VERSIONING_CLASS": "rest_framework.versioning.URLPathVersioning",
+    "DEFAULT_VERSION": "v1",
+    "ALLOWED_VERSIONS": ["v1"],
 }
 
 SIMPLE_JWT = {
