@@ -13,7 +13,7 @@ from apps.accounts.views import ThrottledTokenObtainPairView
 v1_patterns = [
     path("auth/login/", ThrottledTokenObtainPairView.as_view()),
     path("auth/token/refresh/", TokenRefreshView.as_view()),
-    path("accounts/", include("apps.clinics.urls")),
+    path("accounts/", include("apps.accounts.urls")),
     path("clinics/", include("apps.clinics.urls")),
     path("owners/", include("apps.owners.urls")),
     path("pets/", include("apps.pets.urls")),

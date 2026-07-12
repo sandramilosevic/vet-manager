@@ -138,7 +138,7 @@ USE_TZ = True
 STATIC_URL = "static/"
 
 # Frontend url for services.py, used for invitation links
-FRONTEND_URL = env("FRONTEND_URL", default="http://localhost:8000")
+FRONTEND_URL = env("FRONTEND_URL")
 
 # Email settings
 EMAIL_BACKEND = env(
