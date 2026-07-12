@@ -16,4 +16,14 @@ urlpatterns = [
         name="revoke-invitation",
     ),
     path("logout/", views.LogoutView.as_view(), name="logout"),
+    path(
+        "password-reset/",
+        views.PasswordResetRequestView.as_view(),
+        name="password-reset-request",
+    ),
+    path(
+        "password-reset/confirm/",
+        views.PasswordResetConfirmView.as_view(),
+        name="password-reset-confirm",
+    ),
 ]

@@ -171,6 +171,9 @@ REST_FRAMEWORK = {
         "invite-accept": "10/hour",
         "invite-send": "20/day",
         "logout": "10/minute",
+        # password reset
+        "password-reset-request": "5/hour", 
+        "password-reset-confirm": "10/hour",
     },
     # Pagination (page size is 15)
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",

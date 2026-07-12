@@ -3,7 +3,13 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status, generics, permissions
 from .serializers import InvitationSerializer, UserSerializer
-from .services import send_invitation, accept_invitation, revoke_invitation
+from .services import (
+    send_invitation,
+    accept_invitation,
+    revoke_invitation,
+    request_password_reset,
+    confirm_password_reset,
+)
 from .permissions import IsAdmin, IsSameClinic
 from .models import User
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -139,3 +145,63 @@ class LogoutView(APIView):
 class ThrottledTokenObtainPairView(TokenObtainPairView):
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "login"
+
+
+class PasswordResetRequestView(APIView):
+    """Starts the password reset flow: accepts an email and always
+    responds the same way, whether or not that email is registered.
+
+    See services.request_password_reset for why this doesn't check
+    or report existence directly.
+    """
+
+    permission_classes = []  # no auth: the user is locked out, that's the whole point
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "password-reset-request"
+
+    def post(self, request):
+        email = request.data.get("email")
+        if not email:
+            return Response(
+                {"error": "Email is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
+
+        # Deliberately ignoring the return value -- request_password_reset
+        # never raises and never signals whether the email existed, so
+        # there's nothing to branch on here.
+        request_password_reset(email)
+        return Response(
+            {
+                "message": "If an account exists for this email, a reset link has been sent."
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class PasswordResetConfirmView(APIView):
+    """Finishes the password reset flow: validates the uid/token from the
+    email link and sets the new password."""
+
+    permission_classes = []  # no auth: this IS the auth (uid + token pair)
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "password-reset-confirm"
+
+    def post(self, request):
+        uidb64 = request.data.get("uid")
+        token = request.data.get("token")
+        new_password = request.data.get("password")
+
+        if not all([uidb64, token, new_password]):
+            return Response(
+                {"error": "uid, token and password are required"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            confirm_password_reset(uidb64, token, new_password)
+            return Response(
+                {"message": "Password has been reset successfully."},
+                status=status.HTTP_200_OK,
+            )
+        except ValueError as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
