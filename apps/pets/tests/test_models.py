@@ -1,6 +1,7 @@
 import pytest
 from datetime import date
 from django.core.exceptions import ValidationError
+from django.test import TestCase
 
 from apps.owners.models import Owner
 from apps.pets.models import Pet, Vaccination
