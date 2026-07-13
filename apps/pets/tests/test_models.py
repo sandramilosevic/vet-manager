@@ -3,7 +3,7 @@ from datetime import date
 from django.core.exceptions import ValidationError
 
 from apps.owners.models import Owner
-from apps.pets.models import Pet
+from apps.pets.models import Pet, Vaccination
 
 
 @pytest.fixture
@@ -153,3 +153,45 @@ class TestPetModel:
         )
 
         assert pet.notes == ""
+
+
+class VaccinationModelTests(TestCase):
+
+    def setUp(self):
+        """
+        Set up the testing environment with a sample clinic, owner, pet,
+        and vaccination instance to validate model behavior.
+        """
+        self.clinic = "Clinic A"
+
+        self.owner = Owner.objects.create(name="Marko Markovic", clinic=self.clinic)
+
+        self.pet = Pet.objects.create(
+            owner=self.owner,
+            name="Bobi",
+            species=Pet.Species.DOG,
+            gender=Pet.Gender.MALE,
+            birth_year=2020,
+        )
+
+        self.vaccination = Vaccination.objects.create(
+            pet=self.pet,
+            vaccine_name="Rabies",
+            date_given="2026-01-01",
+            next_due="2027-01-01",
+        )
+
+    def test_vaccination_string_representation(self):
+        """Verify that the __str__ method returns the expected formatted text representation."""
+        expected_string = "Rabies, given: 2026-01-01, next vaccination: 2027-01-01"
+        self.assertEqual(str(self.vaccination), expected_string)
+
+    def test_vaccination_history_tracking(self):
+        """Verify that historical records are successfully generated upon model creation and modification."""
+        self.assertEqual(self.vaccination.history.count(), 1)
+
+        self.vaccination.vaccine_name = "DHPP"
+        self.vaccination.save()
+
+        self.assertEqual(self.vaccination.history.count(), 2)
+        self.assertEqual(self.vaccination.history.most_recent().vaccine_name, "DHPP")
