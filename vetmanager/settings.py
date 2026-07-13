@@ -224,7 +224,10 @@ if DEBUG:
     CORS_ALLOW_ALL_ORIGINS = True
 else:
     CORS_ALLOW_ALL_ORIGINS = False
-    CORS_ALLOWED_ORIGINS = env("CORS_ALLOWED_ORIGINS")
+    CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS")
+
+# Trusted origins for CSRF
+CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 
 # SSL / HTTPS Security
 if not DEBUG:
@@ -239,6 +242,12 @@ if not DEBUG:
 
     # Fix: Corrected the typo 'CSRF_COOKIE_SECURE' variable name if needed, assuming standard Django setting
     CSRF_COOKIE_SECURE = True
+
+    # Prevent MIME type sniffing
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+
+    # Prevent clickjacking attacks
+    X_FRAME_OPTIONS = "DENY"
 
     # HSTS (HTTP Strict Transport Security) - force the browser to use HTTPS
     SECURE_HSTS_SECONDS = 31536000  # One year
