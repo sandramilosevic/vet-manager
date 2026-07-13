@@ -18,6 +18,7 @@ v1_patterns = [
     path("owners/", include("apps.owners.urls")),
     path("pets/", include("apps.pets.urls")),
     path("medical-records/", include("apps.medical_records.urls")),
+    path("healthcheck/", include("health_check.urls")),
 ]
 
 

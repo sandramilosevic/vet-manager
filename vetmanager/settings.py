@@ -53,11 +53,15 @@ INSTALLED_APPS = [
     "django_filters",
     "rangefilter",
     "simple_history",
+    "django_health_check",
+    "corsheaders",
 ]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
     "django.contrib.auth.middleware.AuthenticationMiddleware",
@@ -137,6 +141,19 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 
+# Static files configuration for WhiteNoise
+STATIC_ROOT = BASE_DIR / "staticfiles"  # whitenoise storage path
+
+
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
+
 # Frontend url for services.py, used for invitation links
 FRONTEND_URL = env("FRONTEND_URL")
 
@@ -172,7 +189,7 @@ REST_FRAMEWORK = {
         "invite-send": "20/day",
         "logout": "10/minute",
         # password reset
-        "password-reset-request": "5/hour", 
+        "password-reset-request": "5/hour",
         "password-reset-confirm": "10/hour",
     },
     # Pagination (page size is 15)
@@ -201,3 +218,29 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "API documentation for Vet Manager",
     "VERSION": "1.0.0",
 }
+
+# CORS Settings
+if DEBUG:
+    CORS_ALLOW_ALL_ORIGINS = True
+else:
+    CORS_ALLOW_ALL_ORIGINS = False
+    CORS_ALLOWED_ORIGINS = env("CORS_ALLOWED_ORIGINS")
+
+# SSL / HTTPS Security
+if not DEBUG:
+    # Tell Django it's behind a proxy and can trust the X-Forwarded-Proto header
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+
+    # Redirect all HTTP requests to HTTPS
+    SECURE_SSL_REDIRECT = True
+
+    # Ensure cookies and CSRF tokens are sent exclusively over HTTPS
+    SESSION_COOKIE_SECURE = True
+
+    # Fix: Corrected the typo 'CSRF_COOKIE_SECURE' variable name if needed, assuming standard Django setting
+    CSRF_COOKIE_SECURE = True
+
+    # HSTS (HTTP Strict Transport Security) - force the browser to use HTTPS
+    SECURE_HSTS_SECONDS = 31536000  # One year
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
