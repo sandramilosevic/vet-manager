@@ -5,6 +5,7 @@ from django.conf.urls.static import static
 from rest_framework_simplejwt.views import TokenRefreshView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from apps.accounts.views import ThrottledTokenObtainPairView
+from health_check.views import HealthCheckView
 
 # API version control
 # All versioned API endpoints live here
@@ -18,7 +19,7 @@ v1_patterns = [
     path("owners/", include("apps.owners.urls")),
     path("pets/", include("apps.pets.urls")),
     path("medical-records/", include("apps.medical_records.urls")),
-    path("healthcheck/", include("health_check.urls")),
+    path("health/", HealthCheckView.as_view(), name="health_check"),
 ]
 
 

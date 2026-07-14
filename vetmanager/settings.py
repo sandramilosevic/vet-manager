@@ -53,7 +53,7 @@ INSTALLED_APPS = [
     "django_filters",
     "rangefilter",
     "simple_history",
-    "django_health_check",
+    "health_check",
     "corsheaders",
 ]
 
