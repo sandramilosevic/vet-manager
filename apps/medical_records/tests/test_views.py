@@ -1,6 +1,7 @@
 import pytest
 from datetime import date
 
+from django.urls import reverse
 from rest_framework.test import APIClient
 from rest_framework import status
 
@@ -14,18 +15,6 @@ from apps.medical_records.models import MedicalRecord
 def api_client():
     """Create API client for MedicalRecord API tests."""
     return APIClient()
-
-
-@pytest.fixture
-def clinic():
-    """Create a clinic for API tests."""
-    return "Clinic A"
-
-
-@pytest.fixture
-def other_clinic():
-    """Create another clinic for permission tests."""
-    return "Clinic B"
 
 
 @pytest.fixture
@@ -119,7 +108,7 @@ class TestMedicalRecordViews:
 
         api_client.force_authenticate(user=normal_user)
 
-        response = api_client.get("/api/medical-records/")
+        response = api_client.get(reverse("medical-record-list"))
 
         assert response.status_code == status.HTTP_200_OK
         assert len(response.data) == 1
@@ -135,7 +124,7 @@ class TestMedicalRecordViews:
         api_client.force_authenticate(user=vet)
 
         response = api_client.post(
-            "/api/medical-records/",
+            reverse("medical-record-list"),
             {
                 "pet": pet.id,
                 "visit_date": "2026-01-10",
@@ -159,7 +148,7 @@ class TestMedicalRecordViews:
         api_client.force_authenticate(user=normal_user)
 
         response = api_client.post(
-            "/api/medical-records/",
+            reverse("medical-record-list"),
             {
                 "pet": pet.id,
                 "visit_date": "2026-01-10",
@@ -180,7 +169,9 @@ class TestMedicalRecordViews:
 
         api_client.force_authenticate(user=normal_user)
 
-        response = api_client.get(f"/api/medical-records/{medical_record.id}/")
+        response = api_client.get(
+            reverse("medical-record-detail", args=[medical_record.id])
+        )
 
         assert response.status_code == status.HTTP_200_OK
         assert response.data["id"] == medical_record.id
@@ -199,7 +190,9 @@ class TestMedicalRecordViews:
 
         api_client.force_authenticate(user=normal_user)
 
-        response = api_client.get(f"/api/medical-records/{medical_record.id}/")
+        response = api_client.get(
+            reverse("medical-record-detail", args=[medical_record.id])
+        )
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
@@ -214,7 +207,7 @@ class TestMedicalRecordViews:
         api_client.force_authenticate(user=vet)
 
         response = api_client.patch(
-            f"/api/medical-records/{medical_record.id}/",
+            reverse("medical-record-detail", args=[medical_record.id]),
             {
                 "diagnosis": "Updated diagnosis",
             },
@@ -238,7 +231,7 @@ class TestMedicalRecordViews:
         api_client.force_authenticate(user=normal_user)
 
         response = api_client.patch(
-            f"/api/medical-records/{medical_record.id}/",
+            reverse("medical-record-detail", args=[medical_record.id]),
             {
                 "diagnosis": "Changed diagnosis",
             },
@@ -257,7 +250,9 @@ class TestMedicalRecordViews:
 
         api_client.force_authenticate(user=admin)
 
-        response = api_client.delete(f"/api/medical-records/{medical_record.id}/")
+        response = api_client.delete(
+            reverse("medical-record-detail", args=[medical_record.id])
+        )
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
@@ -273,6 +268,8 @@ class TestMedicalRecordViews:
 
         api_client.force_authenticate(user=vet)
 
-        response = api_client.delete(f"/api/medical-records/{medical_record.id}/")
+        response = api_client.delete(
+            reverse("medical-record-detail", args=[medical_record.id])
+        )
 
         assert response.status_code == status.HTTP_403_FORBIDDEN
