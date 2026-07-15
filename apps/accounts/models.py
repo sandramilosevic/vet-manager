@@ -32,7 +32,7 @@ class User(AbstractUser):
 
     email = models.EmailField(unique=True)
     role = models.CharField(max_length=20, choices=ROLES, default="VET")
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -68,6 +68,8 @@ class Invitation(models.Model):
         """
         Same email can't be invited twice in the same clinic, but can be invited in different clinics
         """
+
+        ordering = ["id"]
 
         constraints = [
             models.UniqueConstraint(

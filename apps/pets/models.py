@@ -44,6 +44,9 @@ class Pet(models.Model):
     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
     history = HistoricalRecords()
 
+    class Meta:
+        ordering = ["-created_at"]
+
     def __str__(self):
         return f"{self.name} ({self.owner})"
 
@@ -70,6 +73,9 @@ class Vaccination(models.Model):
 
     # Saving history
     history = HistoricalRecords()
+
+    class Meta:
+        ordering = ["pet", "date_given"]
 
     def __str__(self):
         return f"{self.vaccine_name}, given: {self.date_given}, next vaccination: {self.next_due}"

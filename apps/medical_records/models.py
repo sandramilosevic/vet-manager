@@ -33,5 +33,8 @@ class MedicalRecord(models.Model):
     # Saving history
     history = HistoricalRecords()
 
+    class Meta:
+        ordering = ["-created_at"]
+
     def __str__(self):
         return f"{self.pet} - {self.visit_date} ({self.vet})"
