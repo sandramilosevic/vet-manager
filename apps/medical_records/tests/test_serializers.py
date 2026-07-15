@@ -8,18 +8,6 @@ from apps.medical_records.serializers import MedicalRecordSerializer
 
 
 @pytest.fixture
-def clinic():
-    """Create a clinic for serializer validation tests."""
-    return "Clinic A"
-
-
-@pytest.fixture
-def other_clinic():
-    """Create another clinic for validation tests."""
-    return "Clinic B"
-
-
-@pytest.fixture
 def owner(clinic):
     """Create a valid owner for serializer tests."""
     return Owner.objects.create(
@@ -48,6 +36,7 @@ def vet(clinic):
     return User.objects.create_user(
         username="vet",
         password="password",
+        email="vet@test.com",
         role="VET",
         clinic=clinic,
     )

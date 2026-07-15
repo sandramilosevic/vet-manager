@@ -5,6 +5,7 @@ from django.test import TestCase
 
 from apps.owners.models import Owner
 from apps.pets.models import Pet, Vaccination
+from apps.clinics.models import ClinicGroup
 
 
 @pytest.fixture
@@ -118,42 +119,20 @@ class TestPetModel:
 
         pet.full_clean()
 
-    def test_is_deceased_defaults_to_false(self, owner):
-        """Verify that is_deceased defaults to False."""
+    def test_allergies_and_diet_can_be_blank(self, owner):
+        """Verify that the optional allergies/diet text fields can be left empty."""
 
         pet = Pet.objects.create(
             owner=owner,
             name="Maca",
             species=Pet.Species.DOG,
             gender=Pet.Gender.FEMALE,
+            allergies="",
+            diet="",
         )
 
-        assert pet.is_deceased is False
-
-    def test_is_active_defaults_to_true(self, owner):
-        """Verify that is_active defaults to True."""
-
-        pet = Pet.objects.create(
-            owner=owner,
-            name="Maca",
-            species=Pet.Species.DOG,
-            gender=Pet.Gender.FEMALE,
-        )
-
-        assert pet.is_active is True
-
-    def test_notes_can_be_blank(self, owner):
-        """Verify that notes can be left empty."""
-
-        pet = Pet.objects.create(
-            owner=owner,
-            name="Maca",
-            species=Pet.Species.DOG,
-            gender=Pet.Gender.FEMALE,
-            notes="",
-        )
-
-        assert pet.notes == ""
+        assert pet.allergies == ""
+        assert pet.diet == ""
 
 
 class VaccinationModelTests(TestCase):
@@ -163,9 +142,14 @@ class VaccinationModelTests(TestCase):
         Set up the testing environment with a sample clinic, owner, pet,
         and vaccination instance to validate model behavior.
         """
-        self.clinic = "Clinic A"
+        self.clinic = ClinicGroup.objects.create(name="Clinic A")
 
-        self.owner = Owner.objects.create(name="Marko Markovic", clinic=self.clinic)
+        self.owner = Owner.objects.create(
+            first_name="Marko",
+            last_name="Markovic",
+            phone_number="0611234567",
+            clinic=self.clinic,
+        )
 
         self.pet = Pet.objects.create(
             owner=self.owner,

@@ -19,21 +19,21 @@ class OwnerViewTests(APITestCase):
             password="password123",
             email="vet_a@example.com",
             clinic=self.clinic_a,
-            is_staff=False,
+            role="VET",
         )
         self.admin_a = User.objects.create_user(
             username="admin_a",
             password="password123",
             email="admin_a@example.com",
             clinic=self.clinic_a,
-            is_staff=True,
+            role="ADMIN",
         )
         self.vet_b = User.objects.create_user(
             username="vet_b",
             password="password123",
             email="vet_b@example.com",
             clinic=self.clinic_b,
-            is_staff=False,
+            role="VET",
         )
 
         self.owner_a = Owner.objects.create(
@@ -51,16 +51,16 @@ class OwnerViewTests(APITestCase):
             clinic=self.clinic_b,
         )
 
-        self.list_url = reverse("owner-list-create")
-        self.detail_url = lambda pk: reverse("owner-detail", kwargs={"pk": pk})
+        self.list_url = reverse("owners-list")
+        self.detail_url = lambda pk: reverse("owners-detail", kwargs={"pk": pk})
 
     def test_get_owners_list_multi_tenant_isolation(self):
         """Test that users can only retrieve owners associated with their specific clinic."""
         self.client.force_authenticate(user=self.vet_a)
         response = self.client.get(self.list_url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]["email"], "marko@example.com")
+        self.assertEqual(len(response.data["results"]), 1)
+        self.assertEqual(response.data["results"][0]["email"], "marko@example.com")
 
     def test_create_owner_auto_assigns_clinic(self):
         """Test that owner creation automatically links the model to the clinic of the logged-in user."""

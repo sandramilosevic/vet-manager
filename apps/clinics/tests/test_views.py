@@ -184,7 +184,7 @@ class TestClinicListCreateView:
         response = ClinicListCreateView.as_view()(request)
 
         assert response.status_code == status.HTTP_200_OK
-        returned_ids = [item["id"] for item in response.data]
+        returned_ids = [item["id"] for item in response.data["results"]]
         assert clinic_a.pk in returned_ids
         assert clinic_b.pk not in returned_ids
 
@@ -198,7 +198,7 @@ class TestClinicListCreateView:
         response = ClinicListCreateView.as_view()(request)
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data == []
+        assert response.data["results"] == []
 
     def test_filter_by_city(self, factory, admin_a, clinic_a, group_a):
         """Verify ClinicFilter narrows results by city (icontains)."""
@@ -212,12 +212,12 @@ class TestClinicListCreateView:
             email="north@vetcare.com",
         )
 
-        request = factory.get("/clinics/", {"city": "belgrade"})
+        request = factory.get("/clinics/", {"city__icontains": "belgrade"})
         force_authenticate(request, user=admin_a)
         response = ClinicListCreateView.as_view()(request)
 
         assert response.status_code == status.HTTP_200_OK
-        returned_ids = [item["id"] for item in response.data]
+        returned_ids = [item["id"] for item in response.data["results"]]
         assert returned_ids == [clinic_a.pk]
 
     def test_create_as_admin_forces_own_group(self, factory, admin_a, group_a, group_b):

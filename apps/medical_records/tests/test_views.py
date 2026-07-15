@@ -49,6 +49,7 @@ def vet(clinic):
     return User.objects.create_user(
         username="vet",
         password="password",
+        email="vet@test.com",
         role="VET",
         clinic=clinic,
     )
@@ -61,6 +62,7 @@ def admin(clinic):
     return User.objects.create_user(
         username="admin",
         password="password",
+        email="admin@test.com",
         role="ADMIN",
         clinic=clinic,
     )
@@ -68,12 +70,13 @@ def admin(clinic):
 
 @pytest.fixture
 def normal_user(clinic):
-    """Create a normal authenticated user for API tests."""
+    """Create a normal authenticated user (no vet/admin privileges) for API tests."""
 
     return User.objects.create_user(
         username="user",
         password="password",
-        role="OWNER",
+        email="user@test.com",
+        role="STAFF",
         clinic=clinic,
     )
 
@@ -111,7 +114,7 @@ class TestMedicalRecordViews:
         response = api_client.get(reverse("medical-record-list"))
 
         assert response.status_code == status.HTTP_200_OK
-        assert len(response.data) == 1
+        assert len(response.data["results"]) == 1
 
     def test_vet_can_create_medical_record(
         self,

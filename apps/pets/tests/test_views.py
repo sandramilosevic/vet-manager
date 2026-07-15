@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 from rest_framework import status
 from rest_framework.test import APITestCase
 
+from apps.clinics.models import ClinicGroup
 from apps.owners.models import Owner
 from apps.pets.models import Pet, Vaccination
 
@@ -16,22 +17,22 @@ class PetAndVaccinationApiTests(APITestCase):
         Set up the testing environment with two clinics, clinic-specific users
         (standard vets and administrators), owners, pets, and vaccination records.
         """
-        self.clinic_a = "Clinic A"
-        self.clinic_b = "Clinic B"
+        self.clinic_a = ClinicGroup.objects.create(name="Clinic A")
+        self.clinic_b = ClinicGroup.objects.create(name="Clinic B")
 
         self.vet_clinic_a = User.objects.create_user(
             username="vet_a",
             password="password123",
             email="vet_a@example.com",
             clinic=self.clinic_a,
-            is_staff=False,
+            role="VET",
         )
         self.admin_clinic_a = User.objects.create_user(
             username="admin_a",
             password="password123",
             email="admin_a@example.com",
             clinic=self.clinic_a,
-            is_staff=True,
+            role="ADMIN",
         )
 
         self.vet_clinic_b = User.objects.create_user(
@@ -39,12 +40,20 @@ class PetAndVaccinationApiTests(APITestCase):
             password="password123",
             email="vet_b@example.com",
             clinic=self.clinic_b,
-            is_staff=False,
+            role="VET",
         )
 
-        self.owner_a = Owner.objects.create(name="Marko Markovic", clinic=self.clinic_a)
+        self.owner_a = Owner.objects.create(
+            first_name="Marko",
+            last_name="Markovic",
+            phone_number="064111222",
+            clinic=self.clinic_a,
+        )
         self.owner_b = Owner.objects.create(
-            name="Jovan Jovanovic", clinic=self.clinic_b
+            first_name="Jovan",
+            last_name="Jovanovic",
+            phone_number="065333444",
+            clinic=self.clinic_b,
         )
 
         self.pet_a = Pet.objects.create(
@@ -75,11 +84,11 @@ class PetAndVaccinationApiTests(APITestCase):
             next_due="2027-02-01",
         )
 
-        self.pet_list_url = reverse("pet-list-create")
-        self.pet_detail_url = lambda pk: reverse("pet-detail", kwargs={"pk": pk})
-        self.vaccination_list_url = reverse("vaccination-list-create")
+        self.pet_list_url = reverse("pets")
+        self.pet_detail_url = lambda pk: reverse("pet-details", kwargs={"pk": pk})
+        self.vaccination_list_url = reverse("vaccinations")
         self.vaccination_detail_url = lambda pk: reverse(
-            "vaccination-detail", kwargs={"pk": pk}
+            "vaccinations-details", kwargs={"pk": pk}
         )
 
     def test_get_pets_list_multi_tenant(self):
@@ -88,8 +97,8 @@ class PetAndVaccinationApiTests(APITestCase):
         response = self.client.get(self.pet_list_url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]["name"], "Bobi")
+        self.assertEqual(len(response.data["results"]), 1)
+        self.assertEqual(response.data["results"][0]["name"], "Bobi")
 
     def test_create_pet_success(self):
         """Verify that a pet can be successfully created under a valid clinic owner."""
@@ -132,12 +141,23 @@ class PetAndVaccinationApiTests(APITestCase):
 
     def test_delete_pet_admin_success(self):
         """Verify that an authorized clinic administrator is allowed to delete a pet record."""
+        # Use a pet with no vaccinations attached — Vaccination.pet uses
+        # on_delete=PROTECT, so a pet with vaccinations can't be deleted at all,
+        # which would test the FK protection instead of the delete permission.
+        pet_no_vaccinations = Pet.objects.create(
+            owner=self.owner_a,
+            name="Reks",
+            species=Pet.Species.DOG,
+            gender=Pet.Gender.MALE,
+            birth_year=2019,
+        )
+
         self.client.force_authenticate(user=self.admin_clinic_a)
-        url = self.pet_detail_url(self.pet_a.id)
+        url = self.pet_detail_url(pet_no_vaccinations.id)
         response = self.client.delete(url)
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertFalse(Pet.objects.filter(id=self.pet_a.id).exists())
+        self.assertFalse(Pet.objects.filter(id=pet_no_vaccinations.id).exists())
 
     def test_get_vaccinations_list_multi_tenant(self):
         """Verify that vets can only query vaccination records bound to their clinic."""
@@ -145,8 +165,8 @@ class PetAndVaccinationApiTests(APITestCase):
         response = self.client.get(self.vaccination_list_url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]["vaccine_name"], "Rabies")
+        self.assertEqual(len(response.data["results"]), 1)
+        self.assertEqual(response.data["results"][0]["vaccine_name"], "Rabies")
 
     def test_get_vaccination_detail_different_clinic_returns_404(self):
         """Verify that accessing a vaccination record from another clinic returns a 404 response."""
