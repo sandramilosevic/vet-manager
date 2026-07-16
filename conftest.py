@@ -22,6 +22,18 @@ def clinic_b(db):
 
 
 @pytest.fixture
+def clinic(clinic_a):
+    """Vraća clinic_a kada test traži 'clinic'."""
+    return clinic_a
+
+
+@pytest.fixture
+def other_clinic(clinic_b):
+    """Vraća clinic_b kada test traži 'other_clinic'."""
+    return clinic_b
+
+
+@pytest.fixture
 def admin_user(db, clinic_a):
     return User.objects.create_user(
         username="admin@clinic-a.com",

@@ -1,4 +1,10 @@
 from rest_framework import serializers
+from apps.pets.models import Pet
+from .models import MedicalRecord
+
+
+from rest_framework import serializers
+from apps.pets.models import Pet
 from .models import MedicalRecord
 
 
@@ -18,12 +24,15 @@ class MedicalRecordSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id"]
 
-    def validate(self, attrs):
-        pet = attrs.get("pet", getattr(self.instance, "pet", None))
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Scope `pet` choices to the requesting user's clinic so a pet ID
+        # from another clinic looks like a non-existent ID, not a leak.
         request = self.context.get("request")
-        if pet and request and pet.owner.clinic != request.user.clinic:
-            raise serializers.ValidationError(
-                {"pet": "Pet does not belong to your clinic."}
+        clinic = getattr(getattr(request, "user", None), "clinic", None)
+        if "pet" in self.fields:
+            self.fields["pet"].queryset = (
+                Pet.objects.filter(owner__clinic=clinic)
+                if clinic
+                else Pet.objects.none()
             )
-
-        return attrs
