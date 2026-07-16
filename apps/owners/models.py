@@ -25,6 +25,7 @@ class Owner(models.Model):
     updated_at = models.DateTimeField(auto_now=True, null=True, blank=True)
 
     class Meta:
+        ordering = ["id"]
         # Same email can't be registered twice in the same clinic, but can be registered in different clinics.
         # condition=~Q(email="") excludes blank emails, since Owner.email is optional (blank=True) and
         # multiple owners with no email shouldn't collide with each other.
@@ -35,9 +36,6 @@ class Owner(models.Model):
                 condition=~Q(email=""),
             )
         ]
-
-    class Meta:
-        ordering = ["id"]
 
     def __str__(self):
         return f"{self.first_name} {self.last_name}"

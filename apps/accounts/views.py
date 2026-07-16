@@ -2,7 +2,11 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status, generics, permissions
-from .serializers import InvitationSerializer, UserSerializer
+from .serializers import (
+    InvitationSerializer,
+    InvitationResponseSerializer,
+    UserSerializer,
+)
 from .services import (
     send_invitation,
     accept_invitation,
@@ -22,11 +26,9 @@ class UserListView(generics.ListAPIView):
     """API for GET (list) method. Only admins can see all users in their clinic."""
 
     serializer_class = UserSerializer
-    # only admins can see list of users
     permission_classes = [permissions.IsAuthenticated, IsAdmin]
 
     def get_queryset(self):
-        # return only users from the current user's clinic
         return User.objects.select_related("clinic").filter(
             clinic=self.request.user.clinic
         )
@@ -64,7 +66,8 @@ class SendInvitationView(APIView):
                 invited_by=request.user,
             )
             return Response(
-                InvitationSerializer(invitation).data, status=status.HTTP_201_CREATED
+                InvitationResponseSerializer(invitation).data,
+                status=status.HTTP_201_CREATED,
             )
         except ValueError as e:
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
@@ -73,7 +76,7 @@ class SendInvitationView(APIView):
 class AcceptInvitationView(APIView):
     """New user accepts an invitation using a token and sets their password."""
 
-    permission_classes = []  # no auth required, user doesn't have account yet
+    permission_classes = []
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "invite-accept"
 
@@ -155,7 +158,7 @@ class PasswordResetRequestView(APIView):
     or report existence directly.
     """
 
-    permission_classes = []  # no auth: the user is locked out, that's the whole point
+    permission_classes = []
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "password-reset-request"
 
@@ -166,9 +169,6 @@ class PasswordResetRequestView(APIView):
                 {"error": "Email is required"}, status=status.HTTP_400_BAD_REQUEST
             )
 
-        # Deliberately ignoring the return value -- request_password_reset
-        # never raises and never signals whether the email existed, so
-        # there's nothing to branch on here.
         request_password_reset(email)
         return Response(
             {
@@ -182,7 +182,7 @@ class PasswordResetConfirmView(APIView):
     """Finishes the password reset flow: validates the uid/token from the
     email link and sets the new password."""
 
-    permission_classes = []  # no auth: this IS the auth (uid + token pair)
+    permission_classes = []
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "password-reset-confirm"
 

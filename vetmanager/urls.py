@@ -6,6 +6,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from apps.accounts.views import ThrottledTokenObtainPairView
 from health_check.views import HealthCheckView
+from apps.accounts.views import ThrottledTokenObtainPairView, ThrottledTokenRefreshView
 
 # API version control
 # All versioned API endpoints live here
@@ -13,7 +14,7 @@ from health_check.views import HealthCheckView
 # clients can opt into the newer behavior
 v1_patterns = [
     path("auth/login/", ThrottledTokenObtainPairView.as_view()),
-    path("auth/token/refresh/", TokenRefreshView.as_view()),
+    path("auth/token/refresh/", ThrottledTokenRefreshView.as_view()),
     path("accounts/", include("apps.accounts.urls")),
     path("clinics/", include("apps.clinics.urls")),
     path("owners/", include("apps.owners.urls")),

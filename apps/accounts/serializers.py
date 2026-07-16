@@ -35,6 +35,29 @@ class InvitationSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "token", "status", "invited_by", "expires_at"]
 
 
+class InvitationResponseSerializer(serializers.ModelSerializer):
+    """Used only as the API response after creating an invitation.
+    Deliberately excludes `token` — the token is only ever sent via
+    email, never echoed back in an HTTP response, so it can't leak
+    through logs, proxies, or browser dev tools.
+    """
+
+    clinic_name = serializers.CharField(source="clinic.name", read_only=True)
+
+    class Meta:
+        model = Invitation
+        fields = [
+            "id",
+            "email",
+            "clinic_name",
+            "role",
+            "status",
+            "invited_by",
+            "expires_at",
+        ]
+        read_only_fields = fields
+
+
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
