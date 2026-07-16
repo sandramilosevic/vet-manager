@@ -10,6 +10,7 @@ from .models import Invitation, User
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.core.exceptions import ValidationError
 
 
 def send_invitation(email, clinic, role, invited_by):
@@ -66,7 +67,7 @@ def accept_invitation(token, password):
                 .select_related("clinic")
                 .get(token=token)
             )
-        except Invitation.DoesNotExist:
+        except (Invitation.DoesNotExist, ValidationError, ValueError):
             raise ValueError(generic_error)
 
         if not invitation.is_valid():
