@@ -1,4 +1,5 @@
 from rest_framework.views import APIView
+from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status, generics, permissions
@@ -18,7 +19,6 @@ from .permissions import IsAdmin, IsSameClinic
 from .models import User
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
-from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.throttling import ScopedRateThrottle
 
 
@@ -145,7 +145,16 @@ class LogoutView(APIView):
         return Response(status=status.HTTP_205_RESET_CONTENT)
 
 
+class ThrottledTokenRefreshView(TokenRefreshView):
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "token-refresh"
+
+
 class ThrottledTokenObtainPairView(TokenObtainPairView):
+    """
+    Klasa za login koja ima zastitu (throttle) od previse brzih zahteva.
+    """
+
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "login"
 
