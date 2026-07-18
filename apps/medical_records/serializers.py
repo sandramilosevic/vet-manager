@@ -3,11 +3,6 @@ from apps.pets.models import Pet
 from .models import MedicalRecord
 
 
-from rest_framework import serializers
-from apps.pets.models import Pet
-from .models import MedicalRecord
-
-
 class MedicalRecordSerializer(serializers.ModelSerializer):
     class Meta:
         model = MedicalRecord
