@@ -264,7 +264,7 @@ class TestClinicListCreateView:
 
 @pytest.mark.django_db
 class TestClinicDetailView:
-    """GET/PUT/PATCH (all roles) / DELETE (admin only) on a single Clinic."""
+    """GET (all roles) / PUT/PATCH/DELETE (admin only) on a single Clinic."""
 
     def test_retrieve_own_tenant_clinic(self, factory, admin_a, clinic_a):
         """Verify a user can retrieve a clinic belonging to their own tenant."""
@@ -289,16 +289,27 @@ class TestClinicDetailView:
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
 
-    def test_update_allowed_for_non_admin_roles(self, factory, staff_a, clinic_a):
-        """Verify PATCH is not restricted to admins (only DELETE is)."""
+    def test_update_as_admin_succeeds(self, factory, admin_a, clinic_a):
+        """Verify an admin can update a clinic belonging to their own tenant."""
 
         request = factory.patch(f"/clinics/{clinic_a.pk}/", {"city": "Novi Sad"})
-        force_authenticate(request, user=staff_a)
+        force_authenticate(request, user=admin_a)
         response = ClinicDetailView.as_view()(request, pk=clinic_a.pk)
 
         assert response.status_code == status.HTTP_200_OK
         clinic_a.refresh_from_db()
         assert clinic_a.city == "Novi Sad"
+
+    def test_update_as_non_admin_forbidden(self, factory, staff_a, clinic_a):
+        """Verify non-admin roles cannot update a clinic (consistent with ClinicView)."""
+
+        request = factory.patch(f"/clinics/{clinic_a.pk}/", {"city": "Novi Sad"})
+        force_authenticate(request, user=staff_a)
+        response = ClinicDetailView.as_view()(request, pk=clinic_a.pk)
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        clinic_a.refresh_from_db()
+        assert clinic_a.city != "Novi Sad"
 
     def test_update_other_tenant_clinic_returns_404(self, factory, admin_a, clinic_b):
         """Verify tenant A cannot modify tenant B's clinic even via PATCH."""

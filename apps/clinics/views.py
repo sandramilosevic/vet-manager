@@ -54,7 +54,7 @@ class ClinicListCreateView(generics.ListCreateAPIView):
 
 
 class ClinicDetailView(generics.RetrieveUpdateDestroyAPIView):
-    """API for GET, PUT/PATCH (all users) and DELETE (admin only) on a single
+    """API for GET (all users) and PUT/PATCH/DELETE (admin only) on a single
     Clinic location. Tenant-scoped: only locations under the current user's
     ClinicGroup are visible or editable.
     """
@@ -62,7 +62,7 @@ class ClinicDetailView(generics.RetrieveUpdateDestroyAPIView):
     serializer_class = ClinicSerializer
 
     def get_permissions(self):
-        if self.request.method == "DELETE":
+        if self.request.method in ["PUT", "PATCH", "DELETE"]:
             return [permissions.IsAuthenticated(), IsAdmin(), IsSameClinic()]
         return [permissions.IsAuthenticated(), IsSameClinic()]
 
