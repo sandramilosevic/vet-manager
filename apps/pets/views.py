@@ -15,6 +15,10 @@ class PetListCreateView(generics.ListCreateAPIView):
     filterset_class = PetFilter
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            # drf-spectacular introspects with an AnonymousUser, which has
+            # no .clinic - short-circuit so schema generation doesn't crash.
+            return Pet.objects.none()
         # filtering pets by clinic of current user (multi-tenant protection)
         return Pet.objects.select_related("owner").filter(
             owner__clinic=self.request.user.clinic
@@ -50,6 +54,10 @@ class VaccinationListCreateView(generics.ListCreateAPIView):
     filterset_class = VaccinationFilter
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            # drf-spectacular introspects with an AnonymousUser, which has
+            # no .clinic - short-circuit so schema generation doesn't crash.
+            return Vaccination.objects.none()
         # filtering vaccinations through pet → owner → clinic chain
         return Vaccination.objects.select_related("pet__owner").filter(
             pet__owner__clinic=self.request.user.clinic

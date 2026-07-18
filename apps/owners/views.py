@@ -17,6 +17,10 @@ class OwnerListCreateView(generics.ListCreateAPIView):
     ordering_fields = ["first_name", "last_name", "registration_date"]
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            # drf-spectacular introspects with an AnonymousUser, which has
+            # no .clinic - short-circuit so schema generation doesn't crash.
+            return Owner.objects.none()
         # filtering owners by clinic of current user (multi-tenant protection)
         return Owner.objects.select_related("clinic").filter(
             clinic=self.request.user.clinic
