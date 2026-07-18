@@ -1,3 +1,4 @@
+from drf_spectacular.utils import extend_schema
 from rest_framework.views import APIView
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from rest_framework.response import Response
@@ -7,6 +8,12 @@ from .serializers import (
     InvitationSerializer,
     InvitationResponseSerializer,
     UserSerializer,
+    ErrorResponseSerializer,
+    MessageResponseSerializer,
+    AcceptInvitationRequestSerializer,
+    LogoutRequestSerializer,
+    PasswordResetRequestSerializer,
+    PasswordResetConfirmRequestSerializer,
 )
 from .services import (
     send_invitation,
@@ -53,6 +60,13 @@ class SendInvitationView(APIView):
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "invite-send"
 
+    @extend_schema(
+        request=InvitationSerializer,
+        responses={
+            201: InvitationResponseSerializer,
+            400: ErrorResponseSerializer,
+        },
+    )
     def post(self, request):
         serializer = InvitationSerializer(data=request.data)
         if not serializer.is_valid():
@@ -80,6 +94,13 @@ class AcceptInvitationView(APIView):
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "invite-accept"
 
+    @extend_schema(
+        request=AcceptInvitationRequestSerializer,
+        responses={
+            201: MessageResponseSerializer,
+            400: ErrorResponseSerializer,
+        },
+    )
     def post(self, request):
         token = request.data.get("token")
         password = request.data.get("password")
@@ -105,6 +126,13 @@ class RevokeInvitationView(APIView):
 
     permission_classes = [IsAuthenticated, IsAdmin]
 
+    @extend_schema(
+        request=None,
+        responses={
+            200: MessageResponseSerializer,
+            400: ErrorResponseSerializer,
+        },
+    )
     def post(self, request, invitation_id):
         try:
             revoke_invitation(
@@ -125,6 +153,13 @@ class LogoutView(APIView):
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "logout"
 
+    @extend_schema(
+        request=LogoutRequestSerializer,
+        responses={
+            205: None,
+            400: ErrorResponseSerializer,
+        },
+    )
     def post(self, request):
         refresh_token = request.data.get("refresh")
 
@@ -171,6 +206,13 @@ class PasswordResetRequestView(APIView):
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "password-reset-request"
 
+    @extend_schema(
+        request=PasswordResetRequestSerializer,
+        responses={
+            200: MessageResponseSerializer,
+            400: ErrorResponseSerializer,
+        },
+    )
     def post(self, request):
         email = request.data.get("email")
         if not email:
@@ -195,6 +237,13 @@ class PasswordResetConfirmView(APIView):
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "password-reset-confirm"
 
+    @extend_schema(
+        request=PasswordResetConfirmRequestSerializer,
+        responses={
+            200: MessageResponseSerializer,
+            400: ErrorResponseSerializer,
+        },
+    )
     def post(self, request):
         uidb64 = request.data.get("uid")
         token = request.data.get("token")

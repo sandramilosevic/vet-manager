@@ -58,6 +58,41 @@ class InvitationResponseSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class ErrorResponseSerializer(serializers.Serializer):
+    """Generic {"error": "..."} shape returned by the plain APIViews below.
+    Used only for schema documentation, not for actual validation.
+    """
+
+    error = serializers.CharField()
+
+
+class MessageResponseSerializer(serializers.Serializer):
+    """Generic {"message": "..."} shape returned by several APIViews.
+    Used only for schema documentation, not for actual validation.
+    """
+
+    message = serializers.CharField()
+
+
+class AcceptInvitationRequestSerializer(serializers.Serializer):
+    token = serializers.UUIDField()
+    password = serializers.CharField(write_only=True)
+
+
+class LogoutRequestSerializer(serializers.Serializer):
+    refresh = serializers.CharField()
+
+
+class PasswordResetRequestSerializer(serializers.Serializer):
+    email = serializers.EmailField()
+
+
+class PasswordResetConfirmRequestSerializer(serializers.Serializer):
+    uid = serializers.CharField()
+    token = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+
+
 class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
     def get_token(cls, user):
