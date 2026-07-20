@@ -4,6 +4,9 @@ from .serializers import PetSerializer, VaccinationSerializer
 from apps.accounts.permissions import IsAdmin, IsSameClinic
 from .filters import PetFilter, VaccinationFilter
 from django_filters.rest_framework import DjangoFilterBackend
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class PetListCreateView(generics.ListCreateAPIView):
@@ -25,7 +28,14 @@ class PetListCreateView(generics.ListCreateAPIView):
         )
 
     def perform_create(self, serializer):
-        serializer.save()
+        pet = serializer.save()
+        logger.info(
+            "Pet created: id=%s name=%s owner_id=%s by user_id=%s",
+            pet.id,
+            pet.name,
+            pet.owner_id,
+            self.request.user.id,
+        )
 
 
 class PetDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -43,6 +53,25 @@ class PetDetailView(generics.RetrieveUpdateDestroyAPIView):
         return Pet.objects.select_related("owner").filter(
             owner__clinic=self.request.user.clinic
         )
+
+    def perform_update(self, serializer):
+        pet = serializer.save()
+        logger.info(
+            "Pet updated: id=%s name=%s by user_id=%s",
+            pet.id,
+            pet.name,
+            self.request.user.id,
+        )
+
+    def perform_destroy(self, instance):
+        logger.warning(
+            "Pet deleted: id=%s name=%s owner_id=%s by user_id=%s",
+            instance.id,
+            instance.name,
+            instance.owner_id,
+            self.request.user.id,
+        )
+        instance.delete()
 
 
 class VaccinationListCreateView(generics.ListCreateAPIView):
@@ -63,6 +92,16 @@ class VaccinationListCreateView(generics.ListCreateAPIView):
             pet__owner__clinic=self.request.user.clinic
         )
 
+    def perform_create(self, serializer):
+        vaccination = serializer.save()
+        logger.info(
+            "Vaccination created: id=%s vaccine_name=%s pet_id=%s by user_id=%s",
+            vaccination.id,
+            vaccination.vaccine_name,
+            vaccination.pet_id,
+            self.request.user.id,
+        )
+
 
 class VaccinationDetailView(generics.RetrieveUpdateDestroyAPIView):
     """API for GET, PUT/PATCH (all users) and DELETE (admin only) methods."""
@@ -79,3 +118,22 @@ class VaccinationDetailView(generics.RetrieveUpdateDestroyAPIView):
         return Vaccination.objects.select_related("pet__owner").filter(
             pet__owner__clinic=self.request.user.clinic
         )
+
+    def perform_update(self, serializer):
+        vaccination = serializer.save()
+        logger.info(
+            "Vaccination updated: id=%s vaccine_name=%s by user_id=%s",
+            vaccination.id,
+            vaccination.vaccine_name,
+            self.request.user.id,
+        )
+
+    def perform_destroy(self, instance):
+        logger.warning(
+            "Vaccination deleted: id=%s vaccine_name=%s pet_id=%s by user_id=%s",
+            instance.id,
+            instance.vaccine_name,
+            instance.pet_id,
+            self.request.user.id,
+        )
+        instance.delete()

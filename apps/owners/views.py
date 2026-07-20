@@ -5,6 +5,9 @@ from apps.accounts.permissions import IsAdmin, IsSameClinic
 from .filters import OwnerFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import OrderingFilter
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class OwnerListCreateView(generics.ListCreateAPIView):
@@ -21,14 +24,20 @@ class OwnerListCreateView(generics.ListCreateAPIView):
             # drf-spectacular introspects with an AnonymousUser, which has
             # no .clinic - short-circuit so schema generation doesn't crash.
             return Owner.objects.none()
-        # filtering owners by clinic of current user (multi-tenant protection)
+        # filtering owners by clinic of current user (multi-tenant protection) and excluding soft-deleted records
         return Owner.objects.select_related("clinic").filter(
-            clinic=self.request.user.clinic
+            clinic=self.request.user.clinic, is_deleted=False
         )
 
     def perform_create(self, serializer):
         # automatically assign clinic from current user on create
-        serializer.save(clinic=self.request.user.clinic)
+        owner = serializer.save(clinic=self.request.user.clinic)
+        logger.info(
+            "Owner created: id=%s clinic_id=%s by user_id=%s",
+            owner.id,
+            owner.clinic_id,
+            self.request.user.id,
+        )
 
 
 class OwnerDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -42,7 +51,25 @@ class OwnerDetailView(generics.RetrieveUpdateDestroyAPIView):
         return [permissions.IsAuthenticated(), IsSameClinic()]
 
     def get_queryset(self):
-        # multi-tenant protection, vet only sees owners from his clinic
+        # multi-tenant protection, vet only sees active owners from his clinic
         return Owner.objects.select_related("clinic").filter(
-            clinic=self.request.user.clinic
+            clinic=self.request.user.clinic, is_deleted=False
         )
+
+    def perform_update(self, serializer):
+        owner = serializer.save()
+        logger.info(
+            "Owner updated: id=%s by user_id=%s",
+            owner.id,
+            self.request.user.id,
+        )
+
+    def perform_destroy(self, instance):
+        logger.warning(
+            "Owner soft-deleted: id=%s clinic_id=%s by user_id=%s",
+            instance.id,
+            instance.clinic_id,
+            self.request.user.id,
+        )
+        instance.is_deleted = True
+        instance.save(update_fields=["is_deleted"])

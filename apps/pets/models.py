@@ -1,7 +1,11 @@
+import logging
+
 from django.db import models
 from apps.owners.models import Owner
 from django.core.exceptions import ValidationError
 from simple_history.models import HistoricalRecords
+
+logger = logging.getLogger(__name__)
 
 
 class Pet(models.Model):
@@ -57,6 +61,12 @@ class Pet(models.Model):
             and self.birth_year
             and self.date_of_birth.year != self.birth_year
         ):
+            logger.warning(
+                "Validation failed for pet '%s': birth_year (%s) does not match date_of_birth year (%s)",
+                self.name,
+                self.birth_year,
+                self.date_of_birth.year,
+            )
             raise ValidationError(
                 {"birth_year": "birth_year must match the year in date_of_birth"}
             )
