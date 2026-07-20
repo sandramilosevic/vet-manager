@@ -1,3 +1,4 @@
+from django.utils import timezone
 from rest_framework import generics, permissions
 from .models import Owner
 from .serializers import OwnerSerializer
@@ -21,16 +22,12 @@ class OwnerListCreateView(generics.ListCreateAPIView):
 
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
-            # drf-spectacular introspects with an AnonymousUser, which has
-            # no .clinic - short-circuit so schema generation doesn't crash.
             return Owner.objects.none()
-        # filtering owners by clinic of current user (multi-tenant protection) and excluding soft-deleted records
         return Owner.objects.select_related("clinic").filter(
             clinic=self.request.user.clinic, is_deleted=False
         )
 
     def perform_create(self, serializer):
-        # automatically assign clinic from current user on create
         owner = serializer.save(clinic=self.request.user.clinic)
         logger.info(
             "Owner created: id=%s clinic_id=%s by user_id=%s",
@@ -51,7 +48,8 @@ class OwnerDetailView(generics.RetrieveUpdateDestroyAPIView):
         return [permissions.IsAuthenticated(), IsSameClinic()]
 
     def get_queryset(self):
-        # multi-tenant protection, vet only sees active owners from his clinic
+        if getattr(self, "swagger_fake_view", False):
+            return Owner.objects.none()
         return Owner.objects.select_related("clinic").filter(
             clinic=self.request.user.clinic, is_deleted=False
         )
@@ -72,4 +70,5 @@ class OwnerDetailView(generics.RetrieveUpdateDestroyAPIView):
             self.request.user.id,
         )
         instance.is_deleted = True
-        instance.save(update_fields=["is_deleted"])
+        instance.deleted_at = timezone.now()
+        instance.save(update_fields=["is_deleted", "deleted_at"])
