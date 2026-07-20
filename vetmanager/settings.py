@@ -247,3 +247,97 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000  # One year
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
+
+# Logging settings
+LOG_DIR = BASE_DIR / "logs"
+LOG_DIR.mkdir(exist_ok=True)
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "{asctime} [{levelname}] {name} {module}.{funcName}:{lineno} - {message}",
+            "style": "{",
+        },
+        "simple": {
+            "format": "[{levelname}] {name} - {message}",
+            "style": "{",
+        },
+    },
+    "handlers": {
+        "console": {
+            "class": "logging.StreamHandler",
+            "formatter": "simple",
+            "level": "DEBUG" if DEBUG else "INFO",
+        },
+        "file_general": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOG_DIR / "general.log",
+            "maxBytes": 10 * 1024 * 1024,  # 10 MB
+            "backupCount": 5,
+            "formatter": "verbose",
+            "level": "INFO",
+        },
+        "file_errors": {
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": LOG_DIR / "error.log",
+            "maxBytes": 10 * 1024 * 1024,  # 10 MB
+            "backupCount": 5,
+            "formatter": "verbose",
+            "level": "ERROR",
+        },
+    },
+    "loggers": {
+        # Django internal logger (requests, security, server errors)
+        "django": {
+            "handlers": ["console", "file_general", "file_errors"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        # Django request logger (500 errors, uncaught exceptions)
+        "django.request": {
+            "handlers": ["console", "file_errors"],
+            "level": "ERROR",
+            "propagate": False,
+        },
+        # Uncomment to log every SQL query (very verbose, only for deep debugging)
+        # "django.db.backends": {
+        #     "handlers": ["console"],
+        #     "level": "DEBUG",
+        #     "propagate": False,
+        # },
+        # App-specific loggers
+        "apps.accounts": {
+            "handlers": ["console", "file_general", "file_errors"],
+            "level": "DEBUG" if DEBUG else "INFO",
+            "propagate": False,
+        },
+        "apps.clinics": {
+            "handlers": ["console", "file_general", "file_errors"],
+            "level": "DEBUG" if DEBUG else "INFO",
+            "propagate": False,
+        },
+        "apps.owners": {
+            "handlers": ["console", "file_general", "file_errors"],
+            "level": "DEBUG" if DEBUG else "INFO",
+            "propagate": False,
+        },
+        "apps.pets": {
+            "handlers": ["console", "file_general", "file_errors"],
+            "level": "DEBUG" if DEBUG else "INFO",
+            "propagate": False,
+        },
+        "apps.medical_records": {
+            "handlers": ["console", "file_general", "file_errors"],
+            "level": "DEBUG" if DEBUG else "INFO",
+            "propagate": False,
+        },
+        # Custom exception handler (vetmanager/exceptions.pt)
+        "vetmanager": {
+            "handlers": ["console", "file_general", "file_errors"],
+            "level": "DEBUG" if DEBUG else "INFO",
+            "propagate": False,
+        },
+    },
+}
