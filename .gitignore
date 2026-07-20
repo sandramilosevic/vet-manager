@@ -227,3 +227,4 @@ VetManagerEnv.environment.yaml
 
 # Generated docs
 schema.yaml
+staticfiles/
