@@ -10,7 +10,6 @@ from .models import Invitation, User
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.encoding import force_bytes, force_str
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.core.exceptions import ValidationError
 
 
 def send_invitation(email, clinic, role, invited_by):
@@ -21,8 +20,10 @@ def send_invitation(email, clinic, role, invited_by):
     if invited_by.role != "ADMIN":
         raise ValueError("Only admins can send invitations.")
 
-    if clinic is None:
-        raise ValueError("You must be assigned to a clinic to send invitations.")
+    if clinic is None or getattr(clinic, "is_deleted", False):
+        raise ValueError(
+            "You must be assigned to an active clinic to send invitations."
+        )
 
     if Invitation.objects.filter(email=email, clinic=clinic, status="sent").exists():
         raise ValueError("An active invitation for this email already exists.")
@@ -39,8 +40,6 @@ def send_invitation(email, clinic, role, invited_by):
 
             _send_invitation_email(invitation)
     except IntegrityError:
-        # Lost the race: another request created a "sent" invitation for
-        # this email+clinic between our .exists() check and the DB write.
         raise ValueError("An active invitation for this email already exists.")
 
     return invitation
@@ -58,9 +57,6 @@ def accept_invitation(token, password):
     generic_error = "This invitation link is invalid or has expired."
 
     with transaction.atomic():
-        # select_for_update locks the invitation row so two concurrent
-        # requests with the same token can't both pass the validity check
-        # and race to create two users / double-accept the invitation.
         try:
             invitation = (
                 Invitation.objects.select_for_update()
@@ -73,13 +69,12 @@ def accept_invitation(token, password):
         if not invitation.is_valid():
             raise ValueError(generic_error)
 
-        # Check if a user with this email already exists to prevent a
-        # database IntegrityError -- but don't say so; use the same
-        # generic error as an invalid/expired token (see docstring).
+        if getattr(invitation.clinic, "is_deleted", False):
+            raise ValueError(generic_error)
+
         if User.objects.filter(email=invitation.email).exists():
             raise ValueError(generic_error)
 
-        # Run the same AUTH_PASSWORD_VALIDATORS used everywhere else in the project.
         unsaved_user = User(
             username=invitation.email, email=invitation.email, clinic=invitation.clinic
         )
@@ -171,10 +166,6 @@ def request_password_reset(email):
     except User.DoesNotExist:
         return
 
-    # uid is not secret, it just tells the confirm step which user this
-    # is for. All the actual security comes from the token below, which
-    # is signed with SECRET_KEY and tied to the user's current password
-    # hash (see confirm_password_reset for why that matters).
     uid = urlsafe_base64_encode(force_bytes(user.pk))
     token = default_token_generator.make_token(user)
     link = f"{settings.FRONTEND_URL}/reset-password/{uid}/{token}"
@@ -210,24 +201,14 @@ def confirm_password_reset(uidb64, token, new_password):
     except (TypeError, ValueError, OverflowError, User.DoesNotExist):
         raise ValueError(generic_error)
 
-    # default_token_generator ties the token to the user's current
-    # password hash + last_login, so this check also fails automatically
-    # once the token has already been used once (since set_password()
-    # below changes the hash the token was signed against).
     if not default_token_generator.check_token(user, token):
         raise ValueError(generic_error)
 
     try:
         validate_password(new_password, user=user)
     except ValidationError as e:
-        # .messages (plural) is the list of error strings on
-        # ValidationError -- .message (singular) doesn't exist here and
-        # would raise AttributeError instead of returning a useful
-        # message to the user.
         raise ValueError(" ".join(e.messages))
 
-    # set_password() hashes the password (PBKDF2 by default). Never
-    # assign to user.password directly -- that stores it as plaintext.
     user.set_password(new_password)
     user.save(update_fields=["password"])
     return user

@@ -12,16 +12,12 @@ class User(AbstractUser):
     Role is set by whoever sends the invite.
     """
 
-    # left value is stored in DB, right value is shown in forms/admin
     ROLES = [
         ("ADMIN", "Admin"),
         ("VET", "Vet"),
         ("STAFF", "Staff"),
     ]
 
-    # Links every user to exactly one clinic (multi-tenant boundary).
-    # String reference 'clinics.ClinicGroup' avoids a circular import,
-    # since ClinicGroup lives in a different app.
     clinic = models.ForeignKey(
         "clinics.ClinicGroup",
         on_delete=models.CASCADE,
@@ -57,7 +53,8 @@ class Invitation(models.Model):
     status = models.CharField(max_length=10, choices=STATUS, default="sent")
     invited_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
         related_name="sent_invitations",
     )
     created_at = models.DateTimeField(auto_now_add=True)
@@ -65,10 +62,6 @@ class Invitation(models.Model):
     expires_at = models.DateTimeField()
 
     class Meta:
-        """
-        Same email can't be invited twice in the same clinic, but can be invited in different clinics
-        """
-
         ordering = ["id"]
 
         constraints = [
@@ -87,8 +80,4 @@ class Invitation(models.Model):
         return timezone.now() > self.expires_at
 
     def is_valid(self):
-        """
-        Combines status check (not already used/revoked) with the
-        time-based check above, so callers never have to check both manually
-        """
         return self.status == "sent" and not self.is_expired
