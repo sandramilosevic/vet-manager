@@ -5,6 +5,9 @@ from apps.accounts.permissions import IsAdmin, IsSameClinic
 from .filters import ClinicFilter
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.exceptions import NotFound
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class ClinicView(generics.RetrieveUpdateAPIView):
@@ -24,6 +27,14 @@ class ClinicView(generics.RetrieveUpdateAPIView):
             raise NotFound("User does not have an associated clinic.")
         return self.request.user.clinic
 
+    def perform_update(self, serializer):
+        group = serializer.save()
+        logger.info(
+            "ClinicGroup updated: id=%s by user_id=%s",
+            group.id,
+            self.request.user.id,
+        )
+
 
 class ClinicListCreateView(generics.ListCreateAPIView):
     """API for GET (list) and POST (create) on individual Clinic locations
@@ -41,16 +52,21 @@ class ClinicListCreateView(generics.ListCreateAPIView):
         return [permissions.IsAuthenticated()]
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Clinic.objects.none()
         group = getattr(self.request.user, "clinic", None)
         if group is None:
             return Clinic.objects.none()
-        return Clinic.objects.filter(group=group)
+        return Clinic.active_objects.filter(group=group)
 
     def perform_create(self, serializer):
-        # Force the new location into the admin's own tenant, regardless of
-        # what the client sends in the "group" field, to prevent an admin
-        # from creating a Clinic under a different ClinicGroup's id.
-        serializer.save(group=self.request.user.clinic)
+        clinic = serializer.save(group=self.request.user.clinic)
+        logger.info(
+            "Clinic created: id=%s group_id=%s by user_id=%s",
+            clinic.id,
+            clinic.group_id,
+            self.request.user.id,
+        )
 
 
 class ClinicDetailView(generics.RetrieveUpdateDestroyAPIView):
@@ -67,7 +83,27 @@ class ClinicDetailView(generics.RetrieveUpdateDestroyAPIView):
         return [permissions.IsAuthenticated(), IsSameClinic()]
 
     def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Clinic.objects.none()
         group = getattr(self.request.user, "clinic", None)
         if group is None:
             return Clinic.objects.none()
-        return Clinic.objects.filter(group=group)
+        return Clinic.active_objects.filter(group=group)
+
+    def perform_update(self, serializer):
+        clinic = serializer.save()
+        logger.info(
+            "Clinic updated: id=%s group_id=%s by user_id=%s",
+            clinic.id,
+            clinic.group_id,
+            self.request.user.id,
+        )
+
+    def perform_destroy(self, instance):
+        logger.warning(
+            "Clinic soft-deleted: id=%s group_id=%s by user_id=%s",
+            instance.id,
+            instance.group_id,
+            self.request.user.id,
+        )
+        instance.soft_delete()
