@@ -341,3 +341,15 @@ LOGGING = {
         },
     },
 }
+
+# Sentry error tracking (production only)
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+
+if not DEBUG:
+    sentry_sdk.init(
+        dsn=env("SENTRY_DSN", default=""),
+        integrations=[DjangoIntegration()],
+        traces_sample_rate=0.1,
+        send_default_pii=False,
+    )
