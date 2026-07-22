@@ -1,9 +1,16 @@
 from rest_framework import generics, permissions
 from .models import Pet, Vaccination
-from .serializers import PetSerializer, VaccinationSerializer
+from .serializers import (
+    PetHistorySerializer,
+    PetSerializer,
+    VaccinationHistorySerializer,
+    VaccinationSerializer,
+)
 from apps.accounts.permissions import IsAdmin, IsSameClinic
+from apps.common.history import BaseHistoryView
 from .filters import PetFilter, VaccinationFilter
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.filters import OrderingFilter
 import logging
 
 logger = logging.getLogger(__name__)
@@ -14,8 +21,11 @@ class PetListCreateView(generics.ListCreateAPIView):
 
     serializer_class = PetSerializer
     permission_classes = [permissions.IsAuthenticated]
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_class = PetFilter
+    # No `ordering` default here: OrderingFilter then falls back to the model's
+    # Meta.ordering, so existing clients see exactly the order they did before.
+    ordering_fields = ["name", "species", "date_of_birth", "birth_year", "created_at"]
 
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
@@ -79,8 +89,9 @@ class VaccinationListCreateView(generics.ListCreateAPIView):
 
     serializer_class = VaccinationSerializer
     permission_classes = [permissions.IsAuthenticated]
-    filter_backends = [DjangoFilterBackend]
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
     filterset_class = VaccinationFilter
+    ordering_fields = ["next_due", "date_given", "vaccine_name"]
 
     def get_queryset(self):
         if getattr(self, "swagger_fake_view", False):
@@ -137,3 +148,23 @@ class VaccinationDetailView(generics.RetrieveUpdateDestroyAPIView):
             self.request.user.id,
         )
         instance.delete()
+
+
+class PetHistoryView(BaseHistoryView):
+    """Every recorded revision of one pet, newest first."""
+
+    serializer_class = PetHistorySerializer
+
+    def get_scoped_queryset(self):
+        # Same clinic scoping as PetDetailView: a pet from another practice
+        # 404s here rather than revealing that it exists.
+        return Pet.objects.filter(owner__clinic=self.request.user.clinic)
+
+
+class VaccinationHistoryView(BaseHistoryView):
+    """Every recorded revision of one vaccination, newest first."""
+
+    serializer_class = VaccinationHistorySerializer
+
+    def get_scoped_queryset(self):
+        return Vaccination.objects.filter(pet__owner__clinic=self.request.user.clinic)

@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from apps.common.history import build_history_serializer
 from apps.owners.models import Owner
 from .models import Pet, Vaccination
 
@@ -6,11 +7,16 @@ from .models import Pet, Vaccination
 class PetSerializer(serializers.ModelSerializer):
     """Serializes pet data including owner, species"""
 
+    # `owner` is returned as a bare id, and there is no bulk-lookup endpoint, so
+    # a client rendering a table had to fetch every owner just to label rows.
+    owner_name = serializers.SerializerMethodField()
+
     class Meta:
         model = Pet
         fields = [
             "id",
             "owner",
+            "owner_name",
             "name",
             "species",
             "gender",
@@ -21,7 +27,11 @@ class PetSerializer(serializers.ModelSerializer):
             "allergies",
             "diet",
         ]
-        read_only_fields = ["id"]
+        read_only_fields = ["id", "owner_name"]
+
+    def get_owner_name(self, obj) -> str:
+        owner = obj.owner
+        return f"{owner.first_name} {owner.last_name}".strip()
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -50,16 +60,21 @@ class PetSerializer(serializers.ModelSerializer):
 
 
 class VaccinationSerializer(serializers.ModelSerializer):
+    # Same reasoning as PetSerializer.owner_name: spare the client an extra
+    # round trip just to print which animal the dose belongs to.
+    pet_name = serializers.CharField(source="pet.name", read_only=True)
+
     class Meta:
         model = Vaccination
         fields = [
             "id",
             "pet",
+            "pet_name",
             "vaccine_name",
             "date_given",
             "next_due",
         ]
-        read_only_fields = ["id"]
+        read_only_fields = ["id", "pet_name"]
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -73,3 +88,28 @@ class VaccinationSerializer(serializers.ModelSerializer):
                 if clinic
                 else Pet.objects.none()
             )
+
+
+# Read-only audit trails. `HistoricalRecords()` has always been on these models;
+# these serializers are what finally make the versions reachable over the API.
+PetHistorySerializer = build_history_serializer(
+    Pet,
+    fields=[
+        "id",
+        "owner",
+        "name",
+        "species",
+        "gender",
+        "breed",
+        "date_of_birth",
+        "birth_year",
+        "description",
+        "allergies",
+        "diet",
+    ],
+)
+
+VaccinationHistorySerializer = build_history_serializer(
+    Vaccination,
+    fields=["id", "pet", "vaccine_name", "date_given", "next_due"],
+)

@@ -3,7 +3,8 @@ from . import views
 
 urlpatterns = [
     path("", views.PetListCreateView.as_view(), name="pets"),
-    path("<int:pk>/", views.PetDetailView.as_view(), name="pet-details"),
+    # Declared before "<int:pk>/" so the literal prefix always wins, even if
+    # the converter list changes later.
     path(
         "vaccinations/",
         views.VaccinationListCreateView.as_view(),
@@ -14,4 +15,11 @@ urlpatterns = [
         views.VaccinationDetailView.as_view(),
         name="vaccinations-details",
     ),
+    path(
+        "vaccinations/<int:pk>/history/",
+        views.VaccinationHistoryView.as_view(),
+        name="vaccination-history",
+    ),
+    path("<int:pk>/", views.PetDetailView.as_view(), name="pet-details"),
+    path("<int:pk>/history/", views.PetHistoryView.as_view(), name="pet-history"),
 ]
