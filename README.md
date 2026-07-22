@@ -6,7 +6,7 @@ Vet Manager is a Django REST API for managing veterinary practices. It handles p
 
 **Multi-tenancy done properly.** Every clinic operates within its own `ClinicGroup`. Owners, staff accounts and invitations are all scoped to a clinic at the database level (via foreign keys and unique constraints), so one clinic's data is never visible or reachable by another.
 
-**Full audit trail.** Pets, vaccinations and medical records use `django-simple-history`, so every change to a patient's record is versioned automatically. Nothing gets silently overwritten. This matters a lot in a medical context, where you need to know who changed what and when.
+**Full audit trail.** Pets, vaccinations and medical records use `django-simple-history`, so every change to a patient's record is versioned automatically. Nothing gets silently overwritten. This matters a lot in a medical context, where you need to know who changed what and when. Those versions are readable over the API at `/history/` on each record, scoped to the caller's clinic exactly like the record itself.
 
 **Security-conscious authentication.** Auth is handled with JWT (`djangorestframework-simplejwt`):
 - Access tokens expire after 15 minutes, refresh tokens after 7 days
@@ -66,6 +66,40 @@ python manage.py runserver
 ```
 
 Once running, interactive API documentation is available at `/api/docs/`.
+
+The checked-in `schema.yaml` is generated, not hand-edited. Regenerate it after
+changing any serializer, filter or route:
+
+```bash
+python manage.py spectacular --file schema.yaml
+```
+
+## Endpoint reference
+
+| Endpoint | Methods | Access |
+| --- | --- | --- |
+| `/api/v1/auth/login/` · `/auth/token/refresh/` | POST | public (throttled) |
+| `/api/v1/accounts/me/` | GET | any authenticated user |
+| `/api/v1/accounts/users/` · `/users/{id}/` | GET · GET/PUT/PATCH/DELETE | Admin |
+| `/api/v1/accounts/invitations/` | GET (list) · POST (send) | Admin |
+| `/api/v1/accounts/invitations/{id}/revoke/` | POST | Admin |
+| `/api/v1/accounts/invitations/accept/` | POST | public (throttled) |
+| `/api/v1/accounts/logout/` · `/password-reset/` · `/password-reset/confirm/` | POST | see throttles |
+| `/api/v1/clinics/` | GET · PUT/PATCH | read: all · write: Admin |
+| `/api/v1/clinics/locations/` · `/locations/{id}/` | full CRUD | read: all · write: Admin |
+| `/api/v1/owners/` · `/owners/{id}/` | full CRUD | delete: Admin |
+| `/api/v1/pets/` · `/pets/{id}/` | full CRUD | delete: Admin |
+| `/api/v1/pets/{id}/history/` | GET | any clinic member |
+| `/api/v1/pets/vaccinations/` · `/vaccinations/{id}/` | full CRUD | delete: Admin |
+| `/api/v1/pets/vaccinations/{id}/history/` | GET | any clinic member |
+| `/api/v1/medical-records/` · `/medical-records/{id}/` | full CRUD | write: Vet/Admin · delete: Admin |
+| `/api/v1/medical-records/{id}/history/` | GET | any clinic member |
+| `/api/v1/health/` | GET | — |
+
+Listing invitations is safe because the response never includes the invite
+token: it exists only in the email that was sent. That is also why the list is
+not covered by the `invite-send` throttle — browsing must not burn an admin's
+daily quota for actually sending invitations.
 
 ## Testing
 
