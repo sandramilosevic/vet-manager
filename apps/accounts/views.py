@@ -9,6 +9,7 @@ from django.db.models import ProtectedError
 from .serializers import (
     InvitationSerializer,
     InvitationResponseSerializer,
+    MeSerializer,
     UserSerializer,
     ErrorResponseSerializer,
     MessageResponseSerializer,
@@ -25,10 +26,13 @@ from .services import (
     confirm_password_reset,
 )
 from .permissions import IsAdmin, IsSameClinic
-from .models import User
+from .filters import InvitationFilter
+from .models import Invitation, User
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework.throttling import ScopedRateThrottle
+from rest_framework.filters import OrderingFilter
+from django_filters.rest_framework import DjangoFilterBackend
 import logging
 
 logger = logging.getLogger(__name__)
@@ -80,12 +84,60 @@ class UserDetailView(generics.RetrieveUpdateDestroyAPIView):
         )
 
 
-class SendInvitationView(APIView):
-    """Admin sends an invitation to a new user."""
+class MeView(generics.RetrieveAPIView):
+    """The signed-in user's own profile.
+
+    Without this, a client's only way to learn its own role and clinic is to
+    decode the JWT payload, which it cannot verify. This endpoint is the
+    authoritative answer.
+    """
+
+    serializer_class = MeSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_object(self):
+        return self.request.user
+
+
+class InvitationListCreateView(generics.ListCreateAPIView):
+    """API for GET (list) and POST (send) on invitations. Admins only.
+
+    Listing is what makes revoking usable: the revoke endpoint takes an
+    invitation id, and before this there was no way to discover one.
+    """
 
     permission_classes = [IsAuthenticated, IsAdmin]
-    throttle_classes = [ScopedRateThrottle]
+    filter_backends = [DjangoFilterBackend, OrderingFilter]
+    filterset_class = InvitationFilter
+    ordering_fields = ["expires_at", "created_at", "email", "status"]
+    ordering = ["-created_at"]
     throttle_scope = "invite-send"
+
+    def get_throttles(self):
+        # `invite-send` is 20/day. Applying it to GET as well would mean simply
+        # opening the staff screen a few times exhausts an admin's ability to
+        # invite anyone, so only the write path is scoped.
+        if self.request.method == "POST":
+            return [ScopedRateThrottle()]
+        return super().get_throttles()
+
+    def get_serializer_class(self):
+        # The list must never expose `token` — InvitationSerializer includes it.
+        if self.request.method == "POST":
+            return InvitationSerializer
+        return InvitationResponseSerializer
+
+    def get_queryset(self):
+        if getattr(self, "swagger_fake_view", False):
+            return Invitation.objects.none()
+
+        clinic = getattr(self.request.user, "clinic", None)
+        if clinic is None:
+            return Invitation.objects.none()
+
+        return Invitation.objects.select_related("clinic", "invited_by").filter(
+            clinic=clinic
+        )
 
     @extend_schema(
         request=InvitationSerializer,
@@ -94,23 +146,28 @@ class SendInvitationView(APIView):
             400: ErrorResponseSerializer,
         },
     )
-    def post(self, request):
+    def post(self, request, *args, **kwargs):
         serializer = InvitationSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
         try:
+            # `role` has a model-level default of VET and DRF therefore marks
+            # it optional, but it never lands in validated_data when omitted —
+            # reading it with [] raised KeyError (a 500) on a request that
+            # should simply have used the default.
+            role = serializer.validated_data.get("role", "VET")
             invitation = send_invitation(
                 email=serializer.validated_data["email"],
                 clinic=request.user.clinic,
-                role=serializer.validated_data["role"],
+                role=role,
                 invited_by=request.user,
             )
             logger.info(
                 "Invitation sent: id=%s email=%s role=%s clinic_id=%s by user_id=%s",
                 invitation.id,
                 serializer.validated_data["email"],
-                serializer.validated_data["role"],
+                role,
                 request.user.clinic_id,
                 request.user.id,
             )
@@ -126,6 +183,11 @@ class SendInvitationView(APIView):
                 str(e),
             )
             return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+
+# The view used to be POST-only and named for that. Keep the old name importable
+# so existing imports and tests continue to resolve.
+SendInvitationView = InvitationListCreateView
 
 
 class AcceptInvitationView(APIView):

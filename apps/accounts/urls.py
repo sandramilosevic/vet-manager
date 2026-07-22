@@ -2,9 +2,15 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    path("me/", views.MeView.as_view(), name="me"),
     path("users/", views.UserListView.as_view(), name="user-list"),
     path("users/<int:pk>/", views.UserDetailView.as_view(), name="user-detail"),
-    path("invitations/", views.SendInvitationView.as_view(), name="send-invitation"),
+    # One URL, two methods: GET lists invitations, POST sends one.
+    path(
+        "invitations/",
+        views.InvitationListCreateView.as_view(),
+        name="send-invitation",
+    ),
     path(
         "invitations/accept/",
         views.AcceptInvitationView.as_view(),
