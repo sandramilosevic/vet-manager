@@ -1,8 +1,8 @@
-# views.py
 from rest_framework import generics, permissions
 from .models import MedicalRecord
-from .serializers import MedicalRecordSerializer
+from .serializers import MedicalRecordHistorySerializer, MedicalRecordSerializer
 from apps.accounts.permissions import IsAdmin, IsSameClinic, IsVetOrAdmin
+from apps.common.history import BaseHistoryView
 from .filters import MedicalRecordFilter
 from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
@@ -88,3 +88,21 @@ class MedicalRecordDetailView(generics.RetrieveUpdateDestroyAPIView):
             self.request.user.id,
         )
         instance.soft_delete()
+
+
+class MedicalRecordHistoryView(BaseHistoryView):
+    """Every recorded revision of one medical record, newest first.
+
+    Clinical records are exactly where an audit trail matters most: who changed
+    a diagnosis, and when. Readable by any clinic member, like the record itself.
+    """
+
+    serializer_class = MedicalRecordHistorySerializer
+
+    def get_scoped_queryset(self):
+        clinic = getattr(self.request.user, "clinic", None)
+        if clinic is None:
+            return MedicalRecord.objects.none()
+        # `active_objects`, matching the detail view: a soft-deleted record is
+        # gone as far as the API is concerned, history included.
+        return MedicalRecord.active_objects.filter(pet__owner__clinic=clinic)

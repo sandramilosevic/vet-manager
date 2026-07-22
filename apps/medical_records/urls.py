@@ -12,4 +12,9 @@ urlpatterns = [
         views.MedicalRecordDetailView.as_view(),
         name="medical-record-detail",
     ),
+    path(
+        "<int:pk>/history/",
+        views.MedicalRecordHistoryView.as_view(),
+        name="medical-record-history",
+    ),
 ]
