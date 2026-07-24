@@ -1,4 +1,4 @@
-import { useId } from 'react'
+import { forwardRef, useId } from 'react'
 import type {
   InputHTMLAttributes,
   ReactNode,
@@ -60,16 +60,10 @@ function describedBy(id: string, error?: string, hint?: string): string | undefi
 
 type TextFieldProps = BaseProps & InputHTMLAttributes<HTMLInputElement>
 
-export function TextField({
-  label,
-  error,
-  hint,
-  required,
-  hideLabel,
-  className = '',
-  id: providedId,
-  ...rest
-}: TextFieldProps) {
+export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function TextField(
+  { label, error, hint, required, hideLabel, className = '', id: providedId, ...rest },
+  ref,
+) {
   const generatedId = useId()
   const id = providedId ?? generatedId
 
@@ -83,6 +77,7 @@ export function TextField({
       id={id}
     >
       <input
+        ref={ref}
         id={id}
         className={`input ${error ? 'input--invalid' : ''} ${className}`}
         aria-invalid={error ? true : undefined}
@@ -92,7 +87,7 @@ export function TextField({
       />
     </FieldShell>
   )
-}
+})
 
 /* ------------------------------------------------------------------ */
 
@@ -107,18 +102,21 @@ type SelectFieldProps = BaseProps &
     placeholder?: string
   }
 
-export function SelectField({
-  label,
-  error,
-  hint,
-  required,
-  hideLabel,
-  options,
-  placeholder,
-  className = '',
-  id: providedId,
-  ...rest
-}: SelectFieldProps) {
+export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(function SelectField(
+  {
+    label,
+    error,
+    hint,
+    required,
+    hideLabel,
+    options,
+    placeholder,
+    className = '',
+    id: providedId,
+    ...rest
+  },
+  ref,
+) {
   const generatedId = useId()
   const id = providedId ?? generatedId
 
@@ -132,6 +130,7 @@ export function SelectField({
       id={id}
     >
       <select
+        ref={ref}
         id={id}
         className={`select ${error ? 'select--invalid' : ''} ${className}`}
         aria-invalid={error ? true : undefined}
@@ -148,42 +147,39 @@ export function SelectField({
       </select>
     </FieldShell>
   )
-}
+})
 
 /* ------------------------------------------------------------------ */
 
 type TextAreaFieldProps = BaseProps & TextareaHTMLAttributes<HTMLTextAreaElement>
 
-export function TextAreaField({
-  label,
-  error,
-  hint,
-  required,
-  hideLabel,
-  className = '',
-  id: providedId,
-  ...rest
-}: TextAreaFieldProps) {
-  const generatedId = useId()
-  const id = providedId ?? generatedId
+export const TextAreaField = forwardRef<HTMLTextAreaElement, TextAreaFieldProps>(
+  function TextAreaField(
+    { label, error, hint, required, hideLabel, className = '', id: providedId, ...rest },
+    ref,
+  ) {
+    const generatedId = useId()
+    const id = providedId ?? generatedId
 
-  return (
-    <FieldShell
-      label={label}
-      error={error}
-      hint={hint}
-      required={required}
-      hideLabel={hideLabel}
-      id={id}
-    >
-      <textarea
+    return (
+      <FieldShell
+        label={label}
+        error={error}
+        hint={hint}
+        required={required}
+        hideLabel={hideLabel}
         id={id}
-        className={`textarea ${error ? 'textarea--invalid' : ''} ${className}`}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={describedBy(id, error, hint)}
-        aria-required={required || undefined}
-        {...rest}
-      />
-    </FieldShell>
-  )
-}
+      >
+        <textarea
+          ref={ref}
+          id={id}
+          className={`textarea ${error ? 'textarea--invalid' : ''} ${className}`}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy(id, error, hint)}
+          aria-required={required || undefined}
+          {...rest}
+        />
+      </FieldShell>
+    )
+  },
+)
