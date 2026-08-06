@@ -24,3 +24,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
+
+# Cypress
+cypress/videos/
+cypress/screenshots/
+cypress/downloads/
+cypress.env.json
