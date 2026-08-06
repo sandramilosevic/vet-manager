@@ -1,0 +1,33 @@
+node_modules
+dist
+dist-ssr
+*.local
+
+# Environment files — never bake these into the image.
+# They're passed in at runtime via docker-compose env_file/environment.
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# VCS / build tooling — irrelevant inside the image
+.git
+.gitignore
+Dockerfile
+.dockerignore

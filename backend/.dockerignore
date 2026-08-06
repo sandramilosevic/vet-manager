@@ -1,0 +1,48 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[codz]
+*.pyc
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv
+venv/
+env/
+ENV/
+
+# Django
+db.sqlite3
+db.sqlite3-journal
+*.log
+logs/
+media/
+staticfiles/
+local_settings.py
+
+# Environment files — never bake these into the image.
+# They're passed in at runtime via docker-compose env_file/environment.
+.env
+.env.*
+!.env.example
+
+# Editor / OS
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+
+# Postman / generated docs (not needed inside the image)
+.postman/
+postman/environments/
+VetManagerEnv.environment.yaml
+schema.yaml
+
+# VCS / build tooling — irrelevant inside the image
+.git
+.gitignore
+Dockerfile
+.dockerignore
