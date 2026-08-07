@@ -238,4 +238,25 @@ Anything prefixed `VITE_` is inlined into the built JavaScript bundle and is pub
 
 - Docker and docker-compose for local orchestration of the database, API and frontend
 
-## Project Structure
+## Screenshots 
+
+### Login 
+
+<img width="1918" height="902" alt="image" src="https://github.com/user-attachments/assets/a09f0d0d-e717-4bfc-b9bb-e4f6237d5a95" />
+
+### Dashboard 
+
+<img width="1918" height="907" alt="image" src="https://github.com/user-attachments/assets/62a19f3a-a837-4a6f-a9b4-40df8f892042" />
+
+### Pets list 
+
+<img width="1917" height="910" alt="image" src="https://github.com/user-attachments/assets/65f24c07-2ac2-4f0c-956b-e427ca33348f" />
+
+### Pet detail
+
+<img width="1917" height="906" alt="image" src="https://github.com/user-attachments/assets/8f044a4e-0b3d-4fc5-a5c6-69ad885e32be" />
+
+### Send invitation page
+
+<img width="1915" height="908" alt="image" src="https://github.com/user-attachments/assets/7daa0a42-5422-4632-97b4-d80353c877d5" />
+
