@@ -1,3 +1,5 @@
+import { API } from '../support/api'
+
 describe('Login', () => {
     beforeEach(() => {
         // Open login page and clear previous session
@@ -6,22 +8,19 @@ describe('Login', () => {
     })
 
     it('displays the login form correctly', () => {
-        // Verify all required login elements are visible
         cy.contains('h1', 'Sign in').should('be.visible')
 
-        cy.get('input[name="username"]').should('be.visible')
-        cy.get('input[name="password"]')
+        cy.get('[data-cy="login-username"]').should('be.visible')
+        cy.get('[data-cy="login-password"]')
             .should('be.visible')
             .and('have.attr', 'type', 'password')
 
-        cy.contains('button', 'Sign in').should('be.enabled')
-        cy.contains('a', 'Forgot your password?')
-            .should('have.attr', 'href', '/forgot-password')
+        cy.get('[data-cy="login-submit"]').should('be.enabled').and('contain', 'Sign in')
+        cy.get('[data-cy="forgot-password-link"]').should('have.attr', 'href', '/forgot-password')
     })
 
     it('shows validation errors when submitting an empty form', () => {
-        // Submit without entering credentials
-        cy.contains('button', 'Sign in').click()
+        cy.get('[data-cy="login-submit"]').click()
 
         cy.contains('Username is required').should('be.visible')
         cy.contains('Password is required').should('be.visible')
@@ -30,14 +29,13 @@ describe('Login', () => {
     })
 
     it('logs in successfully, stores tokens, and redirects to the dashboard', () => {
-        // Mock successful authentication
         cy.buildFakeJwt({
             user_id: '1',
             role: 'ADMIN',
             email: 'vet@example.com',
             clinic_id: '1',
         }).then((fakeAccessToken) => {
-            cy.intercept('POST', '**/api/v1/auth/login', {
+            cy.intercept('POST', API.login, {
                 statusCode: 200,
                 body: {
                     access: fakeAccessToken,
@@ -45,7 +43,7 @@ describe('Login', () => {
                 },
             }).as('loginRequest')
 
-            cy.intercept('GET', '**/api/v1/accounts/me/', {
+            cy.intercept('GET', API.me, {
                 statusCode: 200,
                 body: {
                     id: 1,
@@ -55,12 +53,11 @@ describe('Login', () => {
                 },
             }).as('meRequest')
 
-            cy.get('input[name="username"]').type('vet@example.com')
-            cy.get('input[name="password"]').type('password-password123')
+            cy.get('[data-cy="login-username"]').type('vet@example.com')
+            cy.get('[data-cy="login-password"]').type('password-password123')
 
-            cy.contains('button', 'Sign in').click()
+            cy.get('[data-cy="login-submit"]').click()
 
-            // Verify request payload
             cy.wait('@loginRequest').its('request.body').should('deep.equal', {
                 username: 'vet@example.com',
                 password: 'password-password123',
@@ -68,10 +65,8 @@ describe('Login', () => {
 
             cy.wait('@meRequest')
 
-            // Verify redirect after successful login
             cy.url().should('eq', Cypress.config().baseUrl + '/')
 
-            // Verify tokens are stored
             cy.window().then((win) => {
                 expect(win.localStorage.getItem('vetmanager.access')).to.eq(fakeAccessToken)
                 expect(win.localStorage.getItem('vetmanager.refresh')).to.eq('fake-refresh-token')
@@ -80,8 +75,7 @@ describe('Login', () => {
     })
 
     it('shows an error message for invalid credentials', () => {
-        // Mock failed authentication
-        cy.intercept('POST', '**/api/v1/auth/login/', {
+        cy.intercept('POST', API.login, {
             statusCode: 401,
             body: {
                 error: {
@@ -91,14 +85,13 @@ describe('Login', () => {
             },
         }).as('loginRequest')
 
-        cy.get('input[name="username"]').type('vet@example.com')
-        cy.get('input[name="password"]').type('wrong-password')
+        cy.get('[data-cy="login-username"]').type('vet@example.com')
+        cy.get('[data-cy="login-password"]').type('wrong-password')
 
-        cy.contains('button', 'Sign in').click()
+        cy.get('[data-cy="login-submit"]').click()
 
         cy.wait('@loginRequest')
 
-        // Verify error feedback
         cy.contains('Incorrect username or password.').should('be.visible')
 
         cy.get('[role="alert"]')
@@ -106,12 +99,11 @@ describe('Login', () => {
 
         cy.url().should('include', '/login')
 
-        cy.contains('button', 'Sign in').should('be.enabled')
+        cy.get('[data-cy="login-submit"]').should('be.enabled')
     })
 
     it('disables login after too many failed attempts', () => {
-        // Mock rate limiting response
-        cy.intercept('POST', '**/api/v1/auth/login/', {
+        cy.intercept('POST', API.login, {
             statusCode: 429,
             headers: { 'retry-after': '30' },
             body: {
@@ -122,14 +114,13 @@ describe('Login', () => {
             },
         }).as('loginRequest')
 
-        cy.get('input[name="username"]').type('vet@example.com')
-        cy.get('input[name="password"]').type('does-not-matter')
+        cy.get('[data-cy="login-username"]').type('vet@example.com')
+        cy.get('[data-cy="login-password"]').type('does-not-matter')
 
-        cy.contains('button', 'Sign in').click()
+        cy.get('[data-cy="login-submit"]').click()
 
         cy.wait('@loginRequest')
 
-        // Verify cooldown state
         cy.contains('button', /Try again in \d+s/).should('be.disabled')
         cy.contains('Request was throttled').should('be.visible')
     })
