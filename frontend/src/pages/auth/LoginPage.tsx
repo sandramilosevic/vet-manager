@@ -39,15 +39,11 @@ export function LoginPage() {
       await login(values)
       navigate(redirectTo, { replace: true })
     } catch (error) {
-      // Rate limits get their own countdown treatment rather than a generic
-      // error, so the user knows waiting — not retrying — is the fix.
       if (cooldown.handleError(error)) {
         setFormError(normalizeError(error).message)
         return
       }
       const normalized = normalizeError(error)
-      // The backend returns a deliberately vague message for bad credentials;
-      // we don't add detail that would help enumerate accounts.
       setFormError(
         normalized.status === 401
           ? 'Incorrect username or password.'
@@ -77,6 +73,7 @@ export function LoginPage() {
           autoFocus
           required
           error={errors.username?.message}
+          data-cy="login-username"
           {...register('username')}
         />
 
@@ -86,6 +83,7 @@ export function LoginPage() {
           autoComplete="current-password"
           required
           error={errors.password?.message}
+          data-cy="login-password"
           {...register('password')}
         />
 
@@ -95,12 +93,15 @@ export function LoginPage() {
           block
           loading={isSubmitting}
           disabled={cooldown.isCoolingDown}
+          data-cy="login-submit"
         >
           {cooldown.isCoolingDown ? cooldown.label : 'Sign in'}
         </Button>
 
         <p className="text-sm" style={{ textAlign: 'center' }}>
-          <Link to="/forgot-password">Forgot your password?</Link>
+          <Link to="/forgot-password" data-cy="forgot-password-link">
+            Forgot your password?
+          </Link>
         </p>
       </form>
     </AuthLayout>

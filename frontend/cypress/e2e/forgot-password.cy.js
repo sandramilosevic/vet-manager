@@ -1,0 +1,76 @@
+import { API } from '../support/api'
+
+describe('Forgot password', () => {
+    beforeEach(() => {
+        cy.visit('/forgot-password')
+    })
+
+    it('displays the form correctly', () => {
+        cy.contains('h1', 'Reset your password').should('be.visible')
+
+        cy.get('[data-cy="forgot-email"]')
+            .should('be.visible')
+            .and('have.attr', 'type', 'email')
+
+        cy.get('[data-cy="forgot-submit"]')
+            .should('be.enabled')
+            .and('contain', 'Send reset link')
+
+        cy.contains('a', 'Back to sign in').should('have.attr', 'href', '/login')
+    })
+
+    it('shows a validation error for an invalid email', () => {
+        // No stubbed response on purpose: if client-side validation works,
+        // the form should never even try to hit the network.
+        cy.intercept('POST', API.passwordReset).as('resetRequest')
+
+        cy.get('[data-cy="forgot-email"]').type('not-an-email')
+        cy.get('[data-cy="forgot-submit"]').click()
+
+        // TODO: src/lib/schemas.ts wasn't in the project export, so the exact
+        // zod error string is unverified here — swap in the real copy
+        // (e.g. cy.contains('Invalid email address')) once you confirm it.
+        cy.get('[role="alert"]').should('be.visible')
+        cy.url().should('include', '/forgot-password')
+        cy.get('@resetRequest.all').should('have.length', 0)
+    })
+
+    it('shows the same generic message whether or not the account exists', () => {
+        cy.intercept('POST', API.passwordReset, {
+            statusCode: 200,
+            body: { message: 'If an account exists, an email has been sent.' },
+        }).as('resetRequest')
+
+        cy.get('[data-cy="forgot-email"]').type('vet@example.com')
+        cy.get('[data-cy="forgot-submit"]').click()
+
+        cy.wait('@resetRequest').its('request.body').should('deep.equal', {
+            email: 'vet@example.com',
+        })
+
+        cy.get('[data-cy="forgot-success"]').should('be.visible')
+        cy.contains('a reset link is on its way').should('be.visible')
+        cy.get('[data-cy="forgot-email"]').should('not.exist')
+    })
+
+    it('disables the form after too many requests', () => {
+        cy.intercept('POST', API.passwordReset, {
+            statusCode: 429,
+            headers: { 'retry-after': '30' },
+            body: {
+                error: {
+                    code: 'Throttled',
+                    message: 'Request was throttled. Expected available in 30 seconds.',
+                },
+            },
+        }).as('resetRequest')
+
+        cy.get('[data-cy="forgot-email"]').type('vet@example.com')
+        cy.get('[data-cy="forgot-submit"]').click()
+
+        cy.wait('@resetRequest')
+
+        cy.contains('button', /Try again in \d+s/).should('be.disabled')
+        cy.contains('Request was throttled').should('be.visible')
+    })
+})

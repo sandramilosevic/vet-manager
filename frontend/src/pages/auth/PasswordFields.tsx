@@ -5,14 +5,12 @@ import { passwordStrength, type SetPasswordForm } from '../../lib/schemas'
 interface PasswordFieldsProps {
   register: UseFormRegister<SetPasswordForm>
   errors: FieldErrors<SetPasswordForm>
-  /** Watched value — used only for the local strength meter. */
   value: string
 }
 
 const STRENGTH_LABELS = ['', 'Weak', 'Fair', 'Strong'] as const
 const STRENGTH_CLASSES = ['', 'weak', 'fair', 'strong'] as const
 
-/** Shared by the invite-accept and password-reset flows. */
 export function PasswordFields({ register, errors, value }: PasswordFieldsProps) {
   const strength = passwordStrength(value)
 
@@ -26,16 +24,15 @@ export function PasswordFields({ register, errors, value }: PasswordFieldsProps)
           required
           hint="At least 8 characters, and not all numbers."
           error={errors.password?.message}
+          data-cy="password-new"
           {...register('password')}
         />
-        {/* Computed locally; the password is never sent anywhere for scoring. */}
-        <div className="meter" aria-hidden="true">
+        <div className="meter" aria-hidden="true" data-cy="password-strength-meter">
           {[1, 2, 3].map((segment) => (
             <span
               key={segment}
-              className={`meter__seg ${
-                strength >= segment ? `meter__seg--${STRENGTH_CLASSES[strength]}` : ''
-              }`}
+              className={`meter__seg ${strength >= segment ? `meter__seg--${STRENGTH_CLASSES[strength]}` : ''
+                }`}
             />
           ))}
         </div>
@@ -52,6 +49,7 @@ export function PasswordFields({ register, errors, value }: PasswordFieldsProps)
         autoComplete="new-password"
         required
         error={errors.confirmPassword?.message}
+        data-cy="password-confirm"
         {...register('confirmPassword')}
       />
     </>
