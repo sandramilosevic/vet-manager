@@ -80,7 +80,8 @@ Admin-only page for inviting new clinic members through secure, time-limited inv
 
 **Infrastructure**
 
-- Docker and docker-compose for local orchestration of the database, API and frontend
+- Docker
+- Docker Compose for local orchestration of the PostgreSQL database, Django backend and React frontend.
 
 ## Project Structure
 
@@ -264,5 +265,3 @@ Anything prefixed `VITE_` is inlined into the built JavaScript bundle and is pub
 - File attachments on medical records (lab results, x-rays)
 - Analytics and dashboard endpoints
 - In-app password change (currently only the emailed reset flow exists)
-
-- Docker and docker-compose for local orchestration of the database, API and frontend
