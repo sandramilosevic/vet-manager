@@ -16,22 +16,27 @@ They're developed together and versioned together, but each can be run and teste
 ## Screenshots 
 
 ### Login 
+JWT authentication with access and refresh tokens, secure login flow, form validation and rate limiting on authentication endpoints.
 
 <img width="1918" height="902" alt="image" src="https://github.com/user-attachments/assets/a09f0d0d-e717-4bfc-b9bb-e4f6237d5a95" />
 
 ### Dashboard 
+Overview of the clinic with quick access to owners, pets, medical records and staff management.
 
 <img width="1918" height="907" alt="image" src="https://github.com/user-attachments/assets/62a19f3a-a837-4a6f-a9b4-40df8f892042" />
 
 ### Pets list 
+Searchable and filterable list of pets with owner information, species, breed and quick navigation to detailed records.
 
 <img width="1917" height="910" alt="image" src="https://github.com/user-attachments/assets/65f24c07-2ac2-4f0c-956b-e427ca33348f" />
 
 ### Pet detail
+Complete pet profile including owner information, vaccinations, medical history and audit trail of changes.
 
 <img width="1917" height="906" alt="image" src="https://github.com/user-attachments/assets/8f044a4e-0b3d-4fc5-a5c6-69ad885e32be" />
 
 ### Send invitation page
+Admin-only page for inviting new clinic members through secure, time-limited invitation links with role assignment.
 
 <img width="1915" height="908" alt="image" src="https://github.com/user-attachments/assets/7daa0a42-5422-4632-97b4-d80353c877d5" />
 
@@ -78,31 +83,33 @@ They're developed together and versioned together, but each can be run and teste
 - Docker and docker-compose for local orchestration of the database, API and frontend
 
 ## Project Structure
+
+```text
 vet-manager/
 ├── backend/
-│ ├── apps/
-│ │ ├── accounts/ # Users, roles, invitations, auth, password reset
-│ │ ├── clinics/ # ClinicGroup and Clinic (multi-location support)
-│ │ ├── owners/ # Pet owners
-│ │ ├── pets/ # Pets and vaccinations
-│ │ └── medical_records/ # Vet visits, diagnosis, treatment
-│ │ (each app: models.py, serializers.py, views.py, urls.py, admin.py, filters.py, migrations/, tests/)
-│ ├── vetmanager/ # Project settings, urls, wsgi/asgi, custom exceptions
-│ ├── manage.py
-│ └── requirements.txt
+│   ├── apps/
+│   │   ├── accounts/        # Users, roles, invitations, auth, password reset
+│   │   ├── clinics/         # ClinicGroup and Clinic (multi-location support)
+│   │   ├── owners/          # Pet owners
+│   │   ├── pets/            # Pets and vaccinations
+│   │   └── medical_records/ # Vet visits, diagnosis, treatment
+│   │       (each app: models.py, serializers.py, views.py, urls.py, admin.py, filters.py, migrations/, tests/)
+│   ├── vetmanager/          # Project settings, urls, wsgi/asgi, custom exceptions
+│   ├── manage.py
+│   └── requirements.txt
 ├── frontend/
-│ └── src/
-│ ├── api/ # HTTP client, typed resource functions, error normalization
-│ ├── hooks/ # useAuth, useToast, useCooldown, useDebounce, per-resource queries
-│ ├── components/ # layout, ui, forms, route guards
-│ ├── pages/ # one folder per feature area
-│ ├── lib/ # env, jwt decode, formatting, role capabilities, zod schemas
-│ └── styles/ # tokens.css → base.css → components.css
-├── postman/ # Postman collection for the API
+│   └── src/
+│       ├── api/         # HTTP client, typed resource functions, error normalization
+│       ├── hooks/       # useAuth, useToast, useCooldown, useDebounce, per-resource queries
+│       ├── components/  # layout, ui, forms, route guards
+│       ├── pages/       # one folder per feature area
+│       ├── lib/         # env, jwt decode, formatting, role capabilities, zod schemas
+│       └── styles/      # tokens.css → base.css → components.css
+├── postman/             # Postman collection for the API
 ├── docker-compose.yml
 ├── conftest.py
 └── pytest.ini
-
+```
 ## Installation
 
 ### Backend
