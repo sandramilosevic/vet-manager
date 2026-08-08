@@ -1,8 +1,8 @@
 import { API } from '../support/api'
+import loginData from '../fixtures/login.json'
 
 describe('Login', () => {
     beforeEach(() => {
-        // Open login page and clear previous session
         cy.visit('/login')
         cy.clearLocalStorage()
     })
@@ -29,12 +29,9 @@ describe('Login', () => {
     })
 
     it('logs in successfully, stores tokens, and redirects to the dashboard', () => {
-        cy.buildFakeJwt({
-            user_id: '1',
-            role: 'ADMIN',
-            email: 'vet@example.com',
-            clinic_id: '1',
-        }).then((fakeAccessToken) => {
+        const { validUser, jwtPayload } = loginData
+
+        cy.buildFakeJwt(jwtPayload).then((fakeAccessToken) => {
             cy.intercept('POST', API.login, {
                 statusCode: 200,
                 body: {
@@ -45,23 +42,15 @@ describe('Login', () => {
 
             cy.intercept('GET', API.me, {
                 statusCode: 200,
-                body: {
-                    id: 1,
-                    email: 'vet@example.com',
-                    role: 'ADMIN',
-                    clinic_name: 'Test Clinic',
-                },
+                fixture: 'login-me-response.json',
             }).as('meRequest')
 
-            cy.get('[data-cy="login-username"]').type('vet@example.com')
-            cy.get('[data-cy="login-password"]').type('password-password123')
+            cy.get('[data-cy="login-username"]').type(validUser.username)
+            cy.get('[data-cy="login-password"]').type(validUser.password)
 
             cy.get('[data-cy="login-submit"]').click()
 
-            cy.wait('@loginRequest').its('request.body').should('deep.equal', {
-                username: 'vet@example.com',
-                password: 'password-password123',
-            })
+            cy.wait('@loginRequest').its('request.body').should('deep.equal', validUser)
 
             cy.wait('@meRequest')
 
@@ -75,18 +64,15 @@ describe('Login', () => {
     })
 
     it('shows an error message for invalid credentials', () => {
+        const { invalidUser } = loginData
+
         cy.intercept('POST', API.login, {
             statusCode: 401,
-            body: {
-                error: {
-                    code: 'AuthenticationFailed',
-                    message: 'No active account with the given credentials',
-                },
-            },
+            fixture: 'login-invalid-credentials.json',
         }).as('loginRequest')
 
-        cy.get('[data-cy="login-username"]').type('vet@example.com')
-        cy.get('[data-cy="login-password"]').type('wrong-password')
+        cy.get('[data-cy="login-username"]').type(invalidUser.username)
+        cy.get('[data-cy="login-password"]').type(invalidUser.password)
 
         cy.get('[data-cy="login-submit"]').click()
 
@@ -103,18 +89,15 @@ describe('Login', () => {
     })
 
     it('disables login after too many failed attempts', () => {
+        const { validUser } = loginData
+
         cy.intercept('POST', API.login, {
             statusCode: 429,
             headers: { 'retry-after': '30' },
-            body: {
-                error: {
-                    code: 'Throttled',
-                    message: 'Request was throttled. Expected available in 30 seconds.',
-                },
-            },
+            fixture: 'throttled-error.json',
         }).as('loginRequest')
 
-        cy.get('[data-cy="login-username"]').type('vet@example.com')
+        cy.get('[data-cy="login-username"]').type(validUser.username)
         cy.get('[data-cy="login-password"]').type('does-not-matter')
 
         cy.get('[data-cy="login-submit"]').click()

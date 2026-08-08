@@ -1,0 +1,16 @@
+{
+    "validUser": {
+        "username": "vet@example.com",
+        "password": "password-password123"
+    },
+    "invalidUser": {
+        "username": "vet@example.com",
+        "password": "wrong-password"
+    },
+    "jwtPayload": {
+        "user_id": "1",
+        "role": "ADMIN",
+        "email": "vet@example.com",
+        "clinic_id": "1"
+    }
+}

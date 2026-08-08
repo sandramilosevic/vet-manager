@@ -1,0 +1,6 @@
+{
+    "error": {
+        "code": "Throttled",
+        "message": "Request was throttled. Expected available in 30 seconds."
+    }
+}

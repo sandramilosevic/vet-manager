@@ -1,4 +1,5 @@
 import { API } from '../support/api'
+import forgotPasswordData from '../fixtures/forgot-password.json'
 
 describe('Forgot password', () => {
     beforeEach(() => {
@@ -24,7 +25,7 @@ describe('Forgot password', () => {
         // the form should never even try to hit the network.
         cy.intercept('POST', API.passwordReset).as('resetRequest')
 
-        cy.get('[data-cy="forgot-email"]').type('not-an-email')
+        cy.get('[data-cy="forgot-email"]').type(forgotPasswordData.invalidEmail)
         cy.get('[data-cy="forgot-submit"]').click()
 
         // TODO: src/lib/schemas.ts wasn't in the project export, so the exact
@@ -38,14 +39,14 @@ describe('Forgot password', () => {
     it('shows the same generic message whether or not the account exists', () => {
         cy.intercept('POST', API.passwordReset, {
             statusCode: 200,
-            body: { message: 'If an account exists, an email has been sent.' },
+            fixture: 'forgot-password-success.json',
         }).as('resetRequest')
 
-        cy.get('[data-cy="forgot-email"]').type('vet@example.com')
+        cy.get('[data-cy="forgot-email"]').type(forgotPasswordData.email)
         cy.get('[data-cy="forgot-submit"]').click()
 
         cy.wait('@resetRequest').its('request.body').should('deep.equal', {
-            email: 'vet@example.com',
+            email: forgotPasswordData.email,
         })
 
         cy.get('[data-cy="forgot-success"]').should('be.visible')
@@ -57,15 +58,10 @@ describe('Forgot password', () => {
         cy.intercept('POST', API.passwordReset, {
             statusCode: 429,
             headers: { 'retry-after': '30' },
-            body: {
-                error: {
-                    code: 'Throttled',
-                    message: 'Request was throttled. Expected available in 30 seconds.',
-                },
-            },
+            fixture: 'throttled-error.json',
         }).as('resetRequest')
 
-        cy.get('[data-cy="forgot-email"]').type('vet@example.com')
+        cy.get('[data-cy="forgot-email"]').type(forgotPasswordData.email)
         cy.get('[data-cy="forgot-submit"]').click()
 
         cy.wait('@resetRequest')
