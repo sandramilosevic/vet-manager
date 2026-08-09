@@ -3,8 +3,7 @@ import loginData from '../fixtures/login.json'
 
 describe('Login', () => {
     beforeEach(() => {
-        cy.visit('/login')
-        cy.clearLocalStorage()
+        cy.visitClean('/login')
     })
 
     it('displays the login form correctly', () => {
@@ -102,9 +101,6 @@ describe('Login', () => {
 
         cy.get('[data-cy="login-submit"]').click()
 
-        cy.wait('@loginRequest')
-
-        cy.contains('button', /Try again in \d+s/).should('be.disabled')
-        cy.contains('Request was throttled').should('be.visible')
+        cy.expectThrottled('loginRequest')
     })
 })

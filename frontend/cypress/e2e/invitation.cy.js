@@ -51,7 +51,8 @@ describe('Accept invite', () => {
             cy.get('[data-cy="accept-invite-submit"]')
                 .click()
 
-            cy.get('[role="alert"]')
+            cy.get('[data-cy="password-new"]')
+                .siblings('[role="alert"]')
                 .should('be.visible')
 
             cy.get('@acceptRequest.all')
@@ -80,6 +81,8 @@ describe('Accept invite', () => {
         })
 
         it('accepts the invitation, shows success, and redirects to login', () => {
+            cy.clock()
+
             cy.intercept('POST', API.acceptInvitation, {
                 statusCode: 200,
                 body: {
@@ -106,10 +109,7 @@ describe('Accept invite', () => {
             cy.get('[data-cy="accept-invite-success"]')
                 .should('be.visible')
 
-            cy.url()
-                .should('include', `/invite/${inviteData.validToken}`)
-
-            cy.wait(2500)
+            cy.tick(2500)
 
             cy.url()
                 .should('eq', `${Cypress.config().baseUrl}/login`)

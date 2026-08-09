@@ -11,3 +11,20 @@ Cypress.Commands.add('buildFakeJwt', (payload) => {
 
     return `${encodedHeader}.${encodedPayload}.${fakeSignature}`
 })
+
+Cypress.Commands.add('visitClean', (path, options = {}) => {
+    cy.visit(path, {
+        ...options,
+        onBeforeLoad(win) {
+            win.localStorage.clear()
+            win.sessionStorage.clear()
+            options.onBeforeLoad?.(win)
+        },
+    })
+})
+
+Cypress.Commands.add('expectThrottled', (alias) => {
+    cy.wait(`@${alias}`)
+    cy.contains('button', /Try again in \d+s/).should('be.disabled')
+    cy.contains('Request was throttled').should('be.visible')
+})
