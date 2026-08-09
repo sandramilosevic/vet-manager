@@ -4,6 +4,9 @@ import inviteData from '../fixtures/accept-invite.json'
 describe('Accept invite', () => {
     describe('with an invalid token', () => {
         it('shows error banner when invite token is not valid', () => {
+            // AcceptInvitePage checks the token's UUID format before it even
+            // renders the form, so this error appears immediately on visit —
+            // no request is ever made.
             cy.visit(`/invite/${inviteData.invalidToken}`)
 
             cy.contains('Invalid invitation link').should('be.visible')
@@ -39,6 +42,9 @@ describe('Accept invite', () => {
         })
 
         it('shows a validation error for a password that is too short', () => {
+            // No response stubbed — client-side validation should catch this
+            // before anything is sent, which is exactly what the last
+            // assertion in this test proves.
             cy.intercept('POST', API.acceptInvitation)
                 .as('acceptRequest')
 
@@ -51,6 +57,9 @@ describe('Accept invite', () => {
             cy.get('[data-cy="accept-invite-submit"]')
                 .click()
 
+            // Scoped to the field that actually owns the error, not a bare
+            // [role="alert"] lookup — avoids a false positive from some
+            // unrelated alert elsewhere on the page.
             cy.get('[data-cy="password-new"]')
                 .siblings('[role="alert"]')
                 .should('be.visible')
@@ -81,6 +90,9 @@ describe('Accept invite', () => {
         })
 
         it('accepts the invitation, shows success, and redirects to login', () => {
+            // Freeze time before submit fires the app's setTimeout-based
+            // redirect, so we can fast-forward with cy.tick() instead of
+            // burning 2.5 real seconds on every single run.
             cy.clock()
 
             cy.intercept('POST', API.acceptInvitation, {
@@ -99,6 +111,8 @@ describe('Accept invite', () => {
             cy.get('[data-cy="accept-invite-submit"]')
                 .click()
 
+            // Confirms the frontend sends exactly { token, password } — not
+            // just that some request went out.
             cy.wait('@acceptRequest')
                 .its('request.body')
                 .should('deep.equal', {
