@@ -68,7 +68,7 @@ export function ResetPasswordPage() {
       footer={<Link to="/login">Back to sign in</Link>}
     >
       {done ? (
-        <Banner tone="success">
+        <Banner tone="success" data-cy="reset-password-success">
           Your password has been reset. Taking you to the sign-in page…
         </Banner>
       ) : (
@@ -83,6 +83,7 @@ export function ResetPasswordPage() {
             block
             loading={isSubmitting}
             disabled={cooldown.isCoolingDown}
+            data-cy="reset-password-submit"
           >
             {cooldown.isCoolingDown ? cooldown.label : 'Set new password'}
           </Button>
