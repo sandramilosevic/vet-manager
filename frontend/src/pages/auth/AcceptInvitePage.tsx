@@ -79,7 +79,8 @@ export function AcceptInvitePage() {
       footer={<Link to="/login">Already have an account? Sign in</Link>}
     >
       {done ? (
-        <Banner tone="success">
+        <Banner tone="success"
+          data-cy="accept-invite-success">
           Your account is ready. Taking you to the sign-in page…
         </Banner>
       ) : (
@@ -94,6 +95,7 @@ export function AcceptInvitePage() {
             block
             loading={isSubmitting}
             disabled={cooldown.isCoolingDown}
+            data-cy="accept-invite-submit"
           >
             {cooldown.isCoolingDown ? cooldown.label : 'Create my account'}
           </Button>

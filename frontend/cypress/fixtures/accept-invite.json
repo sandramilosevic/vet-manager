@@ -1,0 +1,7 @@
+{
+  "invalidToken": "not-uuid",
+  "validToken": "11111111-1111-1111-1111-111111111111",
+  "shortPassword": "short1",
+  "validPassword": "correct-horse-battery-staple",
+  "mismatchPassword": "different-password-123"
+}

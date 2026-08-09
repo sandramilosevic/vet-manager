@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import type { HTMLAttributes, ReactNode } from 'react'
 import { Button } from './Button'
 import { errorMessage } from '../../api/errors'
 
@@ -101,16 +101,17 @@ const BANNER_ICONS = {
   error: '!',
 } as const
 
-interface BannerProps {
+interface BannerProps extends Omit<HTMLAttributes<HTMLDivElement>, 'children'> {
   tone?: keyof typeof BANNER_ICONS
   children: ReactNode
 }
 
-export function Banner({ tone = 'info', children }: BannerProps) {
+export function Banner({ tone = 'info', children, className = '', ...rest }: BannerProps) {
   return (
     <div
-      className={`banner banner--${tone}`}
+      className={`banner banner--${tone} ${className}`}
       role={tone === 'error' ? 'alert' : 'status'}
+      {...rest}
     >
       <span className="banner__icon" aria-hidden="true">
         {BANNER_ICONS[tone]}

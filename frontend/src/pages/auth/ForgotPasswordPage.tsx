@@ -52,7 +52,7 @@ export function ForgotPasswordPage() {
       footer={<Link to="/login">Back to sign in</Link>}
     >
       {sent ? (
-        <div className="stack">
+        <div className="stack" data-cy="forgot-success">
           <Banner tone="success">
             If an account exists for that email, a reset link is on its way. Check your
             inbox — and your spam folder.
@@ -73,6 +73,7 @@ export function ForgotPasswordPage() {
             autoFocus
             required
             error={errors.email?.message}
+            data-cy="forgot-email"
             {...register('email')}
           />
 
@@ -82,6 +83,7 @@ export function ForgotPasswordPage() {
             block
             loading={isSubmitting}
             disabled={cooldown.isCoolingDown}
+            data-cy="forgot-submit"
           >
             {cooldown.isCoolingDown ? cooldown.label : 'Send reset link'}
           </Button>

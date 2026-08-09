@@ -3,7 +3,12 @@ import forgotPasswordData from '../fixtures/forgot-password.json'
 
 describe('Forgot password', () => {
     beforeEach(() => {
-        cy.visit('/forgot-password')
+        cy.visit('/forgot-password', {
+            onBeforeLoad(win) {
+                win.localStorage.clear()
+                win.sessionStorage.clear()
+            },
+        })
     })
 
     it('displays the form correctly', () => {
@@ -21,16 +26,11 @@ describe('Forgot password', () => {
     })
 
     it('shows a validation error for an invalid email', () => {
-        // No stubbed response on purpose: if client-side validation works,
-        // the form should never even try to hit the network.
         cy.intercept('POST', API.passwordReset).as('resetRequest')
 
         cy.get('[data-cy="forgot-email"]').type(forgotPasswordData.invalidEmail)
         cy.get('[data-cy="forgot-submit"]').click()
 
-        // TODO: src/lib/schemas.ts wasn't in the project export, so the exact
-        // zod error string is unverified here — swap in the real copy
-        // (e.g. cy.contains('Invalid email address')) once you confirm it.
         cy.get('[role="alert"]').should('be.visible')
         cy.url().should('include', '/forgot-password')
         cy.get('@resetRequest.all').should('have.length', 0)
