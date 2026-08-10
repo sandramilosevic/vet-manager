@@ -1,5 +1,5 @@
 import { API } from '../support/api'
-import loginData from '../fixtures/login.json'
+import loginData from '../fixtures/auth/login.json'
 
 describe('Login', () => {
     // visitClean wipes storage before the app's JS runs, so a leftover

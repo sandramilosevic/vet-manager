@@ -1,5 +1,5 @@
 import { API } from '../support/api'
-import resetPasswordData from '../fixtures/reset-password.json'
+import resetPasswordData from '../fixtures/auth/reset-password.json'
 
 describe('Reset password', () => {
     // cy.visitClean clears localStorage/sessionStorage before the app's own

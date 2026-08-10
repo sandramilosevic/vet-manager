@@ -1,5 +1,5 @@
 import { API } from '../support/api'
-import inviteData from '../fixtures/accept-invite.json'
+import inviteData from '../fixtures/auth/accept-invite.json'
 
 describe('Accept invite', () => {
     describe('with an invalid token', () => {

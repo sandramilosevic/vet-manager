@@ -1,5 +1,5 @@
 import { API } from '../support/api'
-import forgotPasswordData from '../fixtures/forgot-password.json'
+import forgotPasswordData from '../fixtures/auth/forgot-password.json'
 
 describe('Forgot password', () => {
     beforeEach(() => {

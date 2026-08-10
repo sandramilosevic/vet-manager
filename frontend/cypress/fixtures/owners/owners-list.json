@@ -1,0 +1,25 @@
+{
+    "count": 2,
+    "next": null,
+    "previous": null,
+    "results": [
+        {
+            "id": 1,
+            "first_name": "Ana",
+            "last_name": "Jovanović",
+            "phone_number": "+381601234567",
+            "registration_date": "2024-03-01",
+            "email": "ana.jovanovic@example.com",
+            "address": "Bulevar Oslobođenja 12, Novi Sad"
+        },
+        {
+            "id": 2,
+            "first_name": "Marko",
+            "last_name": "Petrović",
+            "phone_number": "+381641112233",
+            "registration_date": "2024-05-14",
+            "email": "marko.petrovic@example.com",
+            "address": "Zmaj Jovina 5, Beograd"
+        }
+    ]
+}

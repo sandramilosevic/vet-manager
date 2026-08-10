@@ -131,7 +131,7 @@ export function AppShell() {
             >
               ☰
             </button>
-            <span className="topbar__clinic">
+            <span className="topbar__clinic" data-cy="clinic-name">
               {!profile ? (
                 <span className="skeleton" style={{ width: 140 }} />
               ) : clinicName ? (
