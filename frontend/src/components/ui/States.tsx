@@ -82,7 +82,7 @@ export function ErrorState({ error, onRetry, title = 'Could not load this' }: Er
       <p className="state__title">{title}</p>
       <p className="state__description">{errorMessage(error)}</p>
       {onRetry && (
-        <Button variant="secondary" size="sm" onClick={onRetry}>
+        <Button variant="secondary" size="sm" data-cy="error-retry-button" onClick={onRetry}>
           Try again
         </Button>
       )}

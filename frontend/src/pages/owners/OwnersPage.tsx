@@ -84,7 +84,11 @@ export function OwnersPage() {
         title="Pet owners"
         description="Everyone registered at your practice. Owners are the entry point for adding pets and looking up history."
         actions={
-          <Button variant="primary" onClick={() => { setEditing(null); setFormOpen(true) }}>
+          <Button
+            variant="primary"
+            data-cy="owner-new-button"
+            onClick={() => { setEditing(null); setFormOpen(true) }}
+          >
             + New owner
           </Button>
         }
@@ -145,6 +149,7 @@ export function OwnersPage() {
             <Button
               size="sm"
               variant="ghost"
+              data-cy="owner-clear-filters-button"
               onClick={() => {
                 setFirstName('')
                 setLastName('')
@@ -171,6 +176,7 @@ export function OwnersPage() {
                       className="table__sort"
                       onClick={() => toggleSort('last_name')}
                       aria-label="Sort by last name"
+                      data-cy="owner-sort-last-name"
                     >
                       Name
                       <span className="table__sort-indicator" aria-hidden="true">
@@ -187,6 +193,7 @@ export function OwnersPage() {
                       className="table__sort"
                       onClick={() => toggleSort('registration_date')}
                       aria-label="Sort by registration date"
+                      data-cy="owner-sort-registration-date"
                     >
                       Registered
                       <span className="table__sort-indicator" aria-hidden="true">
@@ -205,7 +212,7 @@ export function OwnersPage() {
               ) : (
                 <tbody>
                   {results.map((owner) => (
-                    <tr key={owner.id}>
+                    <tr key={owner.id} data-cy="owner-row">
                       <td className="table__primary">
                         <Link to={`/owners/${owner.id}`}>
                           {owner.last_name}, {owner.first_name}
@@ -220,6 +227,7 @@ export function OwnersPage() {
                           <Button
                             size="sm"
                             variant="ghost"
+                            data-cy="owner-edit-button"
                             onClick={() => {
                               setEditing(owner)
                               setFormOpen(true)
@@ -231,6 +239,7 @@ export function OwnersPage() {
                             <Button
                               size="sm"
                               variant="ghost"
+                              data-cy="owner-delete-button"
                               onClick={() => setPendingDelete(owner)}
                             >
                               Delete
@@ -258,6 +267,7 @@ export function OwnersPage() {
                     <Button
                       variant="primary"
                       size="sm"
+                      data-cy="owner-empty-add-button"
                       onClick={() => {
                         setEditing(null)
                         setFormOpen(true)

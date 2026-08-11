@@ -55,12 +55,12 @@ export function OwnerFormModal({ open, owner, onClose, onCreated }: Props) {
     reset(
       owner
         ? {
-            first_name: owner.first_name,
-            last_name: owner.last_name,
-            phone_number: owner.phone_number,
-            email: owner.email ?? '',
-            address: owner.address ?? '',
-          }
+          first_name: owner.first_name,
+          last_name: owner.last_name,
+          phone_number: owner.phone_number,
+          email: owner.email ?? '',
+          address: owner.address ?? '',
+        }
         : EMPTY,
     )
   }, [open, owner, reset])
@@ -105,6 +105,7 @@ export function OwnerFormModal({ open, owner, onClose, onCreated }: Props) {
             label="First name"
             required
             autoComplete="given-name"
+            data-cy="owner-first-name"
             error={errors.first_name?.message}
             {...register('first_name')}
           />
@@ -112,6 +113,7 @@ export function OwnerFormModal({ open, owner, onClose, onCreated }: Props) {
             label="Last name"
             required
             autoComplete="family-name"
+            data-cy="owner-last-name"
             error={errors.last_name?.message}
             {...register('last_name')}
           />
@@ -123,6 +125,7 @@ export function OwnerFormModal({ open, owner, onClose, onCreated }: Props) {
             required
             type="tel"
             autoComplete="tel"
+            data-cy="owner-phone-number"
             error={errors.phone_number?.message}
             {...register('phone_number')}
           />
@@ -131,6 +134,7 @@ export function OwnerFormModal({ open, owner, onClose, onCreated }: Props) {
             type="email"
             autoComplete="email"
             hint="Optional, but must be unique within your practice."
+            data-cy="owner-email"
             error={errors.email?.message}
             {...register('email')}
           />
@@ -139,15 +143,16 @@ export function OwnerFormModal({ open, owner, onClose, onCreated }: Props) {
         <TextField
           label="Address"
           autoComplete="street-address"
+          data-cy="owner-address"
           error={errors.address?.message}
           {...register('address')}
         />
 
         <div className="form__actions">
-          <Button variant="ghost" onClick={onClose} disabled={isSubmitting}>
+          <Button variant="ghost" data-cy="owner-form-cancel" onClick={onClose} disabled={isSubmitting}>
             Cancel
           </Button>
-          <Button type="submit" variant="primary" loading={isSubmitting}>
+          <Button type="submit" variant="primary" data-cy="owner-form-submit" loading={isSubmitting}>
             {isEdit ? 'Save changes' : 'Add owner'}
           </Button>
         </div>

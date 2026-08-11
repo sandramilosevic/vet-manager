@@ -53,10 +53,9 @@ Cypress.Commands.add('loginAs', (path, overrides = {}, options = {}) => {
     } = overrides
 
     const claims = {
+        user_id: '1',
         role,
         email,
-        // Comfortably past any single test's runtime — refresh is never
-        // exercised here, so the access token just needs to not expire mid-test.
         exp: Math.floor(Date.now() / 1000) + 60 * 60,
         ...claimsOverrides,
     }

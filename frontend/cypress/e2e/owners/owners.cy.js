@@ -1,73 +1,79 @@
-import { API } from '../support/api'
-import ownerList from '../fixtures/owners-list.json'
+import { API } from '../../support/api'
+import ownerList from '../../fixtures/owners/owners-list.json'
 
-// OwnerFormModal fields use React's useId(), so their `id`/`for` pair is not
-// predictable across renders — unlike the filter inputs, which have fixed
-// ids. Targeting by the `.field` wrapper's label text sidesteps that.
-const fillField = (label, value) => {
-    cy.contains('.field', label).find('input').clear().type(value)
+const fillField = (dataCy, value) => {
+    cy.get(`[data - cy= "${dataCy}"]`).then(($el) => {
+        const tagName = $el.prop('tagName').toLowerCase()
+
+        // Use select() for dropdowns and clear/type for regular inputs,
+        // so the same helper can be used with different form controls.
+        if (tagName === 'select') {
+            cy.wrap($el).select(value)
+        } else {
+            cy.wrap($el).clear().type(value)
+        }
+    })
 }
 
 describe('Owners list', () => {
     it('redirects an unauthenticated visit to /login', () => {
-        // No token in localStorage — RequireAuth should send us to /login
-        // before the page ever tries to call the owners API.
+        // Visit the owners page without authentication to verify
+        // that protected routes redirect unauthenticated users.
         cy.visitClean('/owners')
 
         cy.url().should('include', '/login')
     })
 
     it('renders owner data for an authenticated admin', () => {
-        // Must be set up before loginAs — the page fires GET /owners/ as
-        // soon as it mounts, so the intercept needs to already be in place.
-        cy.intercept('GET', API.owners, {
+        // Stub the owners endpoint so the test uses predictable fixture
+        // data instead of depending on the backend database state.
+        cy.intercept('GET', '**/api/v1/owners/**', {
             statusCode: 200,
             body: ownerList,
         }).as('ownersRequest')
 
         cy.loginAs('/owners')
-
         cy.wait('@ownersRequest')
 
         cy.contains('h1', 'Pet owners').should('be.visible')
 
-        // Proves the profile from loginAs's /me stub reached the UI, not
-        // just that the guard let us through.
+        // Verify that authenticated users can see the clinic information
+        // associated with the current account.
         cy.get('[data-cy="clinic-name"]').should('contain.text', 'Test Clinic')
 
-        // One row per fixture owner — proves real data reached the table,
-        // not just that the page didn't crash.
+        // Verify that every owner returned by the API is rendered in the table.
         ownerList.results.forEach((owner) => {
-            cy.contains('a', `${owner.last_name}, ${owner.first_name}`).should('be.visible')
+            cy.contains('a', `${owner.last_name}, ${owner.first_name} `).should('be.visible')
             cy.contains('td', owner.email).should('be.visible')
         })
 
+        // The login form should not be present after successful authentication.
         cy.get('[data-cy="login-username"]').should('not.exist')
     })
 
     it('filters by last name', () => {
-        // Same stub answers every request in this test — this is a filter
-        // *contract* test (does the right query param go out), not a
-        // simulation of real server-side filtering.
-        cy.intercept('GET', API.owners, {
+        // Stub the initial owners response and observe subsequent requests
+        // to verify that filtering is passed to the API correctly.
+        cy.intercept('GET', '**/api/v1/owners/**', {
             statusCode: 200,
             body: ownerList,
         }).as('ownersRequest')
 
         cy.loginAs('/owners')
-        cy.wait('@ownersRequest') // the initial, unfiltered load on mount
+        cy.wait('@ownersRequest')
 
-        cy.get('#filter-last-name').type('Jov')
+        cy.get('#filter-last-name').type('Owe')
 
-        // Debounced at 350ms (see useDebounce) — cy.wait's default timeout
-        // comfortably covers that, so no extra wait is needed here.
+        // Verify that the entered last name is sent as the expected
+        // case-insensitive query parameter.
         cy.wait('@ownersRequest')
             .its('request.query')
-            .should('include', { last_name__icontains: 'Jov' })
+            .should('include', { last_name__icontains: 'Owe' })
     })
 
     it('shows an empty state when a filter matches nothing', () => {
-        cy.intercept('GET', API.owners, {
+        // Return an empty result set to simulate a filter with no matching owners.
+        cy.intercept('GET', '**/api/v1/owners/**', {
             statusCode: 200,
             body: { count: 0, next: null, previous: null, results: [] },
         }).as('ownersRequest')
@@ -78,46 +84,49 @@ describe('Owners list', () => {
         cy.get('#filter-last-name').type('Nonexistent')
         cy.wait('@ownersRequest')
 
+        // The page should clearly indicate that no owners match the filters.
         cy.contains('No owners match those filters').should('be.visible')
 
-        // The empty state only offers "Add an owner" when there are no
-        // filters active at all — with a filter typed in, that action is
-        // deliberately absent (see hasFilters in OwnersPage).
-        cy.contains('button', 'Add an owner').should('not.exist')
+        // The add-owner action should not be shown in this empty filtered state.
+        cy.get('[data-cy="owner-empty-add-button"]').should('not.exist')
     })
 
     it('sorts by last name when the column header is clicked', () => {
-        cy.intercept('GET', API.owners, {
+        // Stub the owners endpoint so the test can focus on the sorting request.
+        cy.intercept('GET', '**/api/v1/owners/**', {
             statusCode: 200,
             body: ownerList,
         }).as('ownersRequest')
 
         cy.loginAs('/owners')
-        cy.wait('@ownersRequest') // default ordering is already 'last_name'
+        cy.wait('@ownersRequest')
 
-        // Clicking the same field again toggles descending.
-        cy.contains('button', 'Sort by last name').click()
+        cy.get('[data-cy="owner-sort-last-name"]').click()
 
+        // Verify that clicking the column header sends the expected
+        // descending last-name ordering parameter to the API.
         cy.wait('@ownersRequest')
             .its('request.query')
             .should('include', { ordering: '-last_name' })
     })
 
     it('creates a new owner', () => {
-        cy.intercept('GET', API.owners, {
+        // Stub the initial list request so the page loads with known data.
+        cy.intercept('GET', '**/api/v1/owners/**', {
             statusCode: 200,
             body: ownerList,
         }).as('ownersRequest')
 
+        // Stub the create request and return the newly created owner.
         cy.intercept('POST', API.owners, {
             statusCode: 201,
             body: {
                 id: 3,
-                first_name: 'Petar',
-                last_name: 'Nikolić',
-                phone_number: '+381631234567',
-                email: 'petar.nikolic@example.com',
-                address: 'Kralja Petra 1, Niš',
+                first_name: 'Peter',
+                last_name: 'Nolan',
+                phone_number: '+15559871234',
+                email: 'peter.nolan@example.com',
+                address: '1 King Street, Fairview',
                 registration_date: '2026-08-10',
             },
         }).as('createRequest')
@@ -125,76 +134,77 @@ describe('Owners list', () => {
         cy.loginAs('/owners')
         cy.wait('@ownersRequest')
 
-        cy.contains('button', '+ New owner').click()
+        cy.get('[data-cy="owner-new-button"]').click()
         cy.contains('h2', 'New owner').should('be.visible')
 
-        fillField('First name', 'Petar')
-        fillField('Last name', 'Nikolić')
-        fillField('Phone number', '+381631234567')
-        fillField('Email', 'petar.nikolic@example.com')
-        fillField('Address', 'Kralja Petra 1, Niš')
+        // Fill all required owner fields before submitting the form.
+        fillField('owner-first-name', 'Peter')
+        fillField('owner-last-name', 'Nolan')
+        fillField('owner-phone-number', '+15559871234')
+        fillField('owner-email', 'peter.nolan@example.com')
+        fillField('owner-address', '1 King Street, Fairview')
 
-        cy.contains('button', 'Add owner').click()
+        cy.get('[data-cy="owner-form-submit"]').click()
 
-        // Confirms the exact payload, not just that a request fired —
-        // catches a field silently missing from the submit handler.
+        // Verify that the frontend sends the expected owner data
+        // to the create-owner endpoint.
         cy.wait('@createRequest').its('request.body').should('deep.equal', {
-            first_name: 'Petar',
-            last_name: 'Nikolić',
-            phone_number: '+381631234567',
-            email: 'petar.nikolic@example.com',
-            address: 'Kralja Petra 1, Niš',
+            first_name: 'Peter',
+            last_name: 'Nolan',
+            phone_number: '+15559871234',
+            email: 'peter.nolan@example.com',
+            address: '1 King Street, Fairview',
         })
 
-        // Success toast has role="status" (not "alert") — see useToast —
-        // so this also confirms it's announced non-intrusively.
-        cy.contains('[role="status"]', 'Owner added').should('be.visible')
-
-        // Modal closes on success — proven by its heading disappearing,
-        // not just by some assertion succeeding elsewhere on the page.
+        // A successful creation should display a confirmation toast
+        // and close the new-owner form.
+        cy.get('[data-cy="toast"]').should('contain.text', 'Owner added')
         cy.contains('h2', 'New owner').should('not.exist')
     })
 
     it('edits an existing owner', () => {
-        cy.intercept('GET', API.owners, {
+        // Stub the owners list and the update endpoint so the test
+        // remains independent of the real backend state.
+        cy.intercept('GET', '**/api/v1/owners/**', {
             statusCode: 200,
             body: ownerList,
         }).as('ownersRequest')
 
         cy.intercept('PATCH', API.ownerDetail, {
             statusCode: 200,
-            body: { ...ownerList.results[0], phone_number: '+381699998888' },
+            body: { ...ownerList.results[0], phone_number: '+15550009999' },
         }).as('updateRequest')
 
         cy.loginAs('/owners')
         cy.wait('@ownersRequest')
 
-        // Scoped to Ana's row specifically — clicking the first "Edit" on
-        // the page would still pass by coincidence even if the wrong
-        // owner's data leaked into the form.
-        cy.contains('tr', 'Jovanović, Ana').within(() => {
-            cy.contains('button', 'Edit').click()
+        // Locate the specific owner row and open its edit form.
+        cy.contains('[data-cy="owner-row"]', 'Owens, Anna').within(() => {
+            cy.get('[data-cy="owner-edit-button"]').click()
         })
 
         cy.contains('h2', 'Edit owner').should('be.visible')
 
-        // Spot-checks that the form was pre-filled from the row that was
-        // clicked, not left blank or filled from the wrong owner.
-        cy.contains('.field', 'First name').find('input').should('have.value', 'Ana')
+        // Verify that the edit form is populated with the existing owner data.
+        cy.get('[data-cy="owner-first-name"]').should('have.value', 'Anna')
 
-        fillField('Phone number', '+381699998888')
-        cy.contains('button', 'Save changes').click()
+        fillField('owner-phone-number', '+15550009999')
+        cy.get('[data-cy="owner-form-submit"]').click()
 
+        // Verify that the updated phone number is included in the PATCH request.
         cy.wait('@updateRequest')
             .its('request.body')
-            .should('deep.include', { phone_number: '+381699998888' })
+            .should('deep.include', { phone_number: '+15550009999' })
 
-        cy.contains('[role="status"]', 'Owner updated').should('be.visible')
+        // A successful update should display a confirmation toast
+        // and close the edit form.
+        cy.get('[data-cy="toast"]').should('contain.text', 'Owner updated')
         cy.contains('h2', 'Edit owner').should('not.exist')
     })
 
     it('deletes an owner after confirming', () => {
-        cy.intercept('GET', API.owners, {
+        // Stub the owners list and delete endpoint to control the test state.
+        cy.intercept('GET', '**/api/v1/owners/**', {
             statusCode: 200,
             body: ownerList,
         }).as('ownersRequest')
@@ -204,28 +214,31 @@ describe('Owners list', () => {
         cy.loginAs('/owners')
         cy.wait('@ownersRequest')
 
-        cy.contains('tr', 'Petrović, Marko').within(() => {
-            cy.contains('button', 'Delete').click()
+        // Open the delete confirmation dialog for the selected owner.
+        cy.contains('[data-cy="owner-row"]', 'Peters, Mark').within(() => {
+            cy.get('[data-cy="owner-delete-button"]').click()
         })
 
-        // Deleting is destructive and irreversible — the confirm dialog is
-        // the one thing standing between a misclick and data loss, so its
-        // presence (and the exact owner named in it) is worth asserting on
-        // its own, before the request is even sent.
         cy.contains('h2', 'Delete this owner?').should('be.visible')
-        cy.contains('Marko').should('be.visible')
+        cy.contains('Mark').should('be.visible')
 
+        // The delete request must not be sent until the user confirms the action.
         cy.get('@deleteRequest.all').should('have.length', 0)
 
-        cy.contains('button', 'Delete owner').click()
+        cy.get('[data-cy="confirm-dialog-confirm"]').click()
 
         cy.wait('@deleteRequest')
-        cy.contains('[role="status"]', 'Marko Petrović removed').should('be.visible')
+
+        // After a successful deletion, the user should see a confirmation
+        // message and the confirmation dialog should close.
+        cy.get('[data-cy="toast"]').should('contain.text', 'Mark Peters removed')
         cy.contains('h2', 'Delete this owner?').should('not.exist')
     })
 
     it('shows an error state when the owners list fails to load', () => {
-        cy.intercept('GET', API.owners, {
+        // Return a server error to verify that the page handles
+        // failed API requests gracefully.
+        cy.intercept('GET', '**/api/v1/owners/**', {
             statusCode: 500,
             body: { message: 'Internal server error' },
         }).as('ownersRequest')
@@ -233,11 +246,13 @@ describe('Owners list', () => {
         cy.loginAs('/owners')
         cy.wait('@ownersRequest')
 
+        // The user should see an error message, an accessible alert,
+        // and an option to retry the failed request.
         cy.contains('Could not load this').should('be.visible')
         cy.get('[role="alert"]').should('be.visible')
-        cy.contains('button', 'Try again').should('be.visible')
+        cy.get('[data-cy="error-retry-button"]').should('be.visible')
 
-        // The table itself shouldn't render half-broken alongside the error.
+        // The owners table should not be rendered when the list request fails.
         cy.get('table').should('not.exist')
     })
 })

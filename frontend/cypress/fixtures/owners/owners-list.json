@@ -5,21 +5,21 @@
     "results": [
         {
             "id": 1,
-            "first_name": "Ana",
-            "last_name": "Jovanović",
-            "phone_number": "+381601234567",
+            "first_name": "Anna",
+            "last_name": "Owens",
+            "phone_number": "+15551234567",
             "registration_date": "2024-03-01",
-            "email": "ana.jovanovic@example.com",
-            "address": "Bulevar Oslobođenja 12, Novi Sad"
+            "email": "anna.owens@example.com",
+            "address": "12 Market Street, Springfield"
         },
         {
             "id": 2,
-            "first_name": "Marko",
-            "last_name": "Petrović",
-            "phone_number": "+381641112233",
+            "first_name": "Mark",
+            "last_name": "Peters",
+            "phone_number": "+15551112233",
             "registration_date": "2024-05-14",
-            "email": "marko.petrovic@example.com",
-            "address": "Zmaj Jovina 5, Beograd"
+            "email": "mark.peters@example.com",
+            "address": "5 Union Avenue, Riverdale"
         }
     ]
 }

@@ -60,6 +60,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
               key={toast.id}
               className={`toast ${toast.tone === 'default' ? '' : `toast--${toast.tone}`}`}
               role={toast.tone === 'error' ? 'alert' : 'status'}
+              data-cy="toast"
             >
               <span className="toast__message">{toast.message}</span>
               <button
@@ -67,6 +68,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                 className="toast__close"
                 onClick={() => dismiss(toast.id)}
                 aria-label="Dismiss notification"
+                data-cy="toast-close"
               >
                 ×
               </button>

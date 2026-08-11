@@ -101,6 +101,7 @@ export function Modal({
         aria-modal="true"
         aria-labelledby={titleId}
         aria-describedby={description ? descriptionId : undefined}
+        data-cy="modal"
       >
         <div className="modal__header">
           <div>
@@ -118,6 +119,7 @@ export function Modal({
             className="modal__close"
             onClick={onClose}
             aria-label="Close dialog"
+            data-cy="modal-close"
           >
             ×
           </button>
@@ -160,11 +162,12 @@ export function ConfirmDialog({
       <div className="stack">
         <div className="secondary-text text-sm">{description}</div>
         <div className="form__actions">
-          <Button variant="ghost" onClick={onCancel} disabled={loading}>
+          <Button variant="ghost" data-cy="confirm-dialog-cancel" onClick={onCancel} disabled={loading}>
             {cancelLabel}
           </Button>
           <Button
             variant={destructive ? 'danger-solid' : 'primary'}
+            data-cy="confirm-dialog-confirm"
             onClick={onConfirm}
             loading={loading}
           >
