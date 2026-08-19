@@ -1,5 +1,5 @@
-import { API } from '../support/api'
-import forgotPasswordData from '../fixtures/auth/forgot-password.json'
+import { API } from '../../support/api'
+import forgotPasswordData from '../../fixtures/auth/forgot-password.json'
 
 describe('Forgot password', () => {
     beforeEach(() => {
@@ -33,14 +33,14 @@ describe('Forgot password', () => {
         cy.get('@resetRequest.all').should('have.length', 0)
     })
 
-    it('shows the same generic message whether or not the account exists', () => {
+    it('shows a generic success message for an existing email', () => {
         // Security-relevant behavior: the backend deliberately returns an
         // identical response for known and unknown emails, so an attacker
         // can't use this form to enumerate registered accounts. This test
-        // locks that contract in place on the frontend side.
+        // locks the frontend's generic success behavior in place.
         cy.intercept('POST', API.passwordReset, {
             statusCode: 200,
-            fixture: 'forgot-password-success.json',
+            fixture: 'auth/forgot-password-success.json',
         }).as('resetRequest')
 
         cy.get('[data-cy="forgot-email"]').type(forgotPasswordData.email)
@@ -62,7 +62,7 @@ describe('Forgot password', () => {
         cy.intercept('POST', API.passwordReset, {
             statusCode: 429,
             headers: { 'retry-after': '30' },
-            fixture: 'throttled-error.json',
+            fixture: 'auth/throttled-error.json',
         }).as('resetRequest')
 
         cy.get('[data-cy="forgot-email"]').type(forgotPasswordData.email)

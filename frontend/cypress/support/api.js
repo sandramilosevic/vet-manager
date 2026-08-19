@@ -11,6 +11,6 @@ export const API = {
     passwordReset: '**/api/v1/accounts/password-reset/',
     passwordResetConfirm: '**/api/v1/accounts/password-reset/confirm/',
     acceptInvitation: '**/api/v1/accounts/invitations/accept/',
-    owners: '**/api/v1/owners/',
-    ownerDetail: '**/api/v1/owners/*/'
+    owners: '**/api/v1/owners/**',
+    ownerDetail: '**/api/v1/owners/*/',
 }

@@ -1,5 +1,5 @@
-import { API } from '../support/api'
-import resetPasswordData from '../fixtures/auth/reset-password.json'
+import { API } from '../../support/api'
+import resetPasswordData from '../../fixtures/auth/reset-password.json'
 
 describe('Reset password', () => {
     // cy.visitClean clears localStorage/sessionStorage before the app's own
@@ -87,7 +87,7 @@ describe('Reset password', () => {
         cy.intercept('POST', API.passwordResetConfirm, {
             statusCode: 429,
             headers: { 'retry-after': '30' },
-            fixture: 'throttled-error.json',
+            fixture: 'auth/throttled-error.json',
         }).as('resetConfirmRequest')
 
         cy.get('[data-cy="password-new"]').type(resetPasswordData.validPassword)

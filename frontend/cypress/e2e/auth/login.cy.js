@@ -1,5 +1,5 @@
-import { API } from '../support/api'
-import loginData from '../fixtures/auth/login.json'
+import { API } from '../../support/api'
+import loginData from '../../fixtures/auth/login.json'
 
 describe('Login', () => {
     // visitClean wipes storage before the app's JS runs, so a leftover
@@ -52,7 +52,7 @@ describe('Login', () => {
             // on a real request.
             cy.intercept('GET', API.me, {
                 statusCode: 200,
-                fixture: 'login-me-response.json',
+                fixture: 'auth/login-me-response.json',
             }).as('meRequest')
 
             cy.get('[data-cy="login-username"]').type(validUser.username)
@@ -83,7 +83,7 @@ describe('Login', () => {
 
         cy.intercept('POST', API.login, {
             statusCode: 401,
-            fixture: 'login-invalid-credentials.json',
+            fixture: 'auth/login-invalid-credentials.json',
         }).as('loginRequest')
 
         cy.get('[data-cy="login-username"]').type(invalidUser.username)
@@ -114,7 +114,7 @@ describe('Login', () => {
         cy.intercept('POST', API.login, {
             statusCode: 429,
             headers: { 'retry-after': '30' },
-            fixture: 'throttled-error.json',
+            fixture: 'auth/throttled-error.json',
         }).as('loginRequest')
 
         cy.get('[data-cy="login-username"]').type(validUser.username)

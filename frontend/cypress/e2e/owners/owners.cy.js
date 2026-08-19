@@ -2,7 +2,7 @@ import { API } from '../../support/api'
 import ownerList from '../../fixtures/owners/owners-list.json'
 
 const fillField = (dataCy, value) => {
-    cy.get(`[data - cy= "${dataCy}"]`).then(($el) => {
+    cy.get(`[data-cy="${dataCy}"]`).then(($el) => {
         const tagName = $el.prop('tagName').toLowerCase()
 
         // Use select() for dropdowns and clear/type for regular inputs,
@@ -27,7 +27,7 @@ describe('Owners list', () => {
     it('renders owner data for an authenticated admin', () => {
         // Stub the owners endpoint so the test uses predictable fixture
         // data instead of depending on the backend database state.
-        cy.intercept('GET', '**/api/v1/owners/**', {
+        cy.intercept('GET', API.owners, {
             statusCode: 200,
             body: ownerList,
         }).as('ownersRequest')
@@ -43,7 +43,7 @@ describe('Owners list', () => {
 
         // Verify that every owner returned by the API is rendered in the table.
         ownerList.results.forEach((owner) => {
-            cy.contains('a', `${owner.last_name}, ${owner.first_name} `).should('be.visible')
+            cy.contains('a', `${owner.last_name}, ${owner.first_name}`.trim()).should('be.visible')
             cy.contains('td', owner.email).should('be.visible')
         })
 
@@ -54,7 +54,7 @@ describe('Owners list', () => {
     it('filters by last name', () => {
         // Stub the initial owners response and observe subsequent requests
         // to verify that filtering is passed to the API correctly.
-        cy.intercept('GET', '**/api/v1/owners/**', {
+        cy.intercept('GET', API.owners, {
             statusCode: 200,
             body: ownerList,
         }).as('ownersRequest')
@@ -73,7 +73,7 @@ describe('Owners list', () => {
 
     it('shows an empty state when a filter matches nothing', () => {
         // Return an empty result set to simulate a filter with no matching owners.
-        cy.intercept('GET', '**/api/v1/owners/**', {
+        cy.intercept('GET', API.owners, {
             statusCode: 200,
             body: { count: 0, next: null, previous: null, results: [] },
         }).as('ownersRequest')
@@ -93,7 +93,7 @@ describe('Owners list', () => {
 
     it('sorts by last name when the column header is clicked', () => {
         // Stub the owners endpoint so the test can focus on the sorting request.
-        cy.intercept('GET', '**/api/v1/owners/**', {
+        cy.intercept('GET', API.owners, {
             statusCode: 200,
             body: ownerList,
         }).as('ownersRequest')
@@ -112,7 +112,7 @@ describe('Owners list', () => {
 
     it('creates a new owner', () => {
         // Stub the initial list request so the page loads with known data.
-        cy.intercept('GET', '**/api/v1/owners/**', {
+        cy.intercept('GET', API.owners, {
             statusCode: 200,
             body: ownerList,
         }).as('ownersRequest')
@@ -165,7 +165,7 @@ describe('Owners list', () => {
     it('edits an existing owner', () => {
         // Stub the owners list and the update endpoint so the test
         // remains independent of the real backend state.
-        cy.intercept('GET', '**/api/v1/owners/**', {
+        cy.intercept('GET', API.owners, {
             statusCode: 200,
             body: ownerList,
         }).as('ownersRequest')
@@ -204,7 +204,7 @@ describe('Owners list', () => {
 
     it('deletes an owner after confirming', () => {
         // Stub the owners list and delete endpoint to control the test state.
-        cy.intercept('GET', '**/api/v1/owners/**', {
+        cy.intercept('GET', API.owners, {
             statusCode: 200,
             body: ownerList,
         }).as('ownersRequest')
@@ -238,7 +238,7 @@ describe('Owners list', () => {
     it('shows an error state when the owners list fails to load', () => {
         // Return a server error to verify that the page handles
         // failed API requests gracefully.
-        cy.intercept('GET', '**/api/v1/owners/**', {
+        cy.intercept('GET', API.owners, {
             statusCode: 500,
             body: { message: 'Internal server error' },
         }).as('ownersRequest')
