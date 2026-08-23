@@ -75,7 +75,7 @@ interface ErrorStateProps {
 
 export function ErrorState({ error, onRetry, title = 'Could not load this' }: ErrorStateProps) {
   return (
-    <div className="state state--error" role="alert">
+    <div className="state state--error" data-cy="error-state" role="alert">
       <span className="state__icon" aria-hidden="true">
         !
       </span>
@@ -110,6 +110,7 @@ export function Banner({ tone = 'info', children, className = '', ...rest }: Ban
   return (
     <div
       className={`banner banner--${tone} ${className}`}
+      data-cy="banner"
       role={tone === 'error' ? 'alert' : 'status'}
       {...rest}
     >

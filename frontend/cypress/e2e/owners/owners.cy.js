@@ -2,7 +2,6 @@ import { API } from '../../support/api'
 import ownerList from '../../fixtures/owners/owners-list.json'
 import newOwner from '../../fixtures/owners/new-owner.json'
 
-// Fills a form field, picking the right Cypress command based on element type
 const fillField = (dataCy, value) => {
     cy.get(`[data-cy="${dataCy}"]`).then(($el) => {
         const tagName = $el.prop('tagName').toLowerCase()
@@ -16,7 +15,6 @@ const fillField = (dataCy, value) => {
 }
 
 describe('Owners list', () => {
-    // Stub the owners list request and log in before every test
     beforeEach(() => {
         cy.intercept('GET', API.owners, {
             statusCode: 200,
@@ -27,7 +25,6 @@ describe('Owners list', () => {
         cy.wait('@ownersRequest')
     })
 
-    // Page shows clinic name and full owner list for a logged-in admin
     it('renders owner data for an authenticated admin', () => {
         cy.contains('h1', 'Pet owners').should('be.visible')
         cy.get('[data-cy="clinic-name"]').should('contain.text', 'Test Clinic')
@@ -40,7 +37,6 @@ describe('Owners list', () => {
         cy.get('[data-cy="login-username"]').should('not.exist')
     })
 
-    // Typing a last name triggers a filtered request with the right query param
     it('filters by last name', () => {
         const lastName = ownerList.results[0].last_name
 
@@ -62,7 +58,6 @@ describe('Owners list', () => {
             .should('include', { last_name__icontains: lastName })
     })
 
-    // Same as above, but for the first name filter
     it('filters by first name', () => {
         const firstName = ownerList.results[0].first_name
 
@@ -84,7 +79,25 @@ describe('Owners list', () => {
             .should('include', { first_name__icontains: firstName })
     })
 
-    // No results should show an empty state and hide the "add owner" shortcut
+    it('filters by email address', () => {
+        const email = ownerList.results[0].email
+
+        cy.intercept('GET', API.owners, (req) => {
+            if (req.query.email__icontains === email) {
+                req.alias = 'filterByEmail'
+            }
+
+            req.reply({
+                statusCode: 200,
+                body: ownerList,
+            })
+        })
+
+        cy.get('#filter-email').type(email)
+
+        cy.wait('@filterByEmail').its('request.query').should('include', { email__icontains: email })
+    })
+
     it('shows an empty state when a filter matches nothing', () => {
         cy.intercept('GET', API.owners, {
             statusCode: 200,
@@ -98,7 +111,6 @@ describe('Owners list', () => {
         cy.get('[data-cy="owner-empty-add-button"]').should('not.exist')
     })
 
-    // Clicking the column header sorts the list by last name descending
     it('sorts by last name when the column header is clicked', () => {
         cy.get('[data-cy="owner-sort-last-name"]').click()
 
@@ -107,13 +119,12 @@ describe('Owners list', () => {
             .should('include', { ordering: '-last_name' })
     })
 
-    // Filling out and submitting the form creates a new owner
     it('creates a new owner', () => {
         cy.intercept('POST', API.owners, {
             statusCode: 201,
             body: {
                 id: 3,
-                ...newOwner,
+                ...newOwner.newOwner,
                 registration_date: '2026-08-10',
             },
         }).as('createRequest')
@@ -121,21 +132,70 @@ describe('Owners list', () => {
         cy.get('[data-cy="owner-new-button"]').click()
         cy.contains('h2', 'New owner').should('be.visible')
 
-        fillField('owner-first-name', newOwner.first_name)
-        fillField('owner-last-name', newOwner.last_name)
-        fillField('owner-phone-number', newOwner.phone_number)
-        fillField('owner-email', newOwner.email)
-        fillField('owner-address', newOwner.address)
+        fillField('owner-first-name', newOwner.newOwner.first_name)
+        fillField('owner-last-name', newOwner.newOwner.last_name)
+        fillField('owner-phone-number', newOwner.newOwner.phone_number)
+        fillField('owner-email', newOwner.newOwner.email)
+        fillField('owner-address', newOwner.newOwner.address)
 
         cy.get('[data-cy="owner-form-submit"]').click()
 
-        cy.wait('@createRequest').its('request.body').should('deep.equal', newOwner)
+        cy.wait('@createRequest').its('request.body').should('deep.equal', newOwner.newOwner)
 
         cy.get('[data-cy="toast"]').should('contain.text', 'Owner added')
         cy.contains('h2', 'New owner').should('not.exist')
     })
 
-    // Editing an existing owner's phone number updates the record
+    it('fills form with empty fields', () => {
+        cy.intercept('POST', API.owners, cy.spy().as('createSpy'))
+
+        cy.get('[data-cy="owner-new-button"]').click()
+        cy.contains('h2', 'New owner').should('be.visible')
+
+        cy.get('[data-cy="owner-form-submit"]').click()
+
+        cy.get('[data-cy="owner-first-name-error"]').should('be.visible')
+        cy.get('[data-cy="owner-last-name-error"]').should('be.visible')
+        cy.get('[data-cy="owner-phone-number-error"]').should('be.visible')
+
+        cy.get('@createSpy').should('not.have.been.called')
+        cy.contains('h2', 'New owner').should('be.visible')
+    })
+
+    it('can not make same owners', () => {
+        cy.intercept('POST', API.owners, {
+            statusCode: 400,
+            body: {
+                error: {
+                    code: 'ValidationError',
+                    message: 'Validation failed',
+                    details: {
+                        email: ['This email is already registered for this clinic'],
+                    },
+                },
+            },
+        }).as('sameOwnerRequest')
+
+        cy.get('[data-cy="owner-new-button"]').click()
+        cy.contains('h2', 'New owner').should('be.visible')
+
+        fillField('owner-first-name', newOwner.newOwner.first_name)
+        fillField('owner-last-name', newOwner.newOwner.last_name)
+        fillField('owner-phone-number', newOwner.newOwner.phone_number)
+        fillField('owner-email', newOwner.newOwner.email)
+        fillField('owner-address', newOwner.newOwner.address)
+
+        cy.get('[data-cy="owner-form-submit"]').click()
+
+        cy.wait('@sameOwnerRequest')
+
+        cy.get('[data-cy="owner-email-error"]')
+            .should('be.visible')
+            .and('contain.text', 'already registered')
+
+        cy.contains('h2', 'New owner').should('be.visible')
+    })
+
     it('edits an existing owner', () => {
         cy.intercept('PATCH', API.ownerDetail, {
             statusCode: 200,
@@ -160,7 +220,6 @@ describe('Owners list', () => {
         cy.contains('h2', 'Edit owner').should('not.exist')
     })
 
-    // Deleting requires confirmation before the request actually fires
     it('deletes an owner after confirming', () => {
         cy.intercept('DELETE', API.ownerDetail, { statusCode: 204 }).as('deleteRequest')
 
@@ -179,7 +238,6 @@ describe('Owners list', () => {
         cy.contains('h2', 'Delete this owner?').should('not.exist')
     })
 
-    // A failed GET shows the error state instead of the table
     it('shows an error state when the owners list fails to load', () => {
         cy.intercept('GET', API.owners, {
             statusCode: 500,

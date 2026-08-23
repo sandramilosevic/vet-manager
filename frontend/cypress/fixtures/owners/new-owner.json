@@ -1,7 +1,16 @@
 {
-    "first_name": "Peter",
-    "last_name": "Nolan",
-    "phone_number": "+15559871234",
-    "email": "peter.nolan@example.com",
-    "address": "1 King Street, Fairview"
+    "newOwner": {
+        "first_name": "Peter",
+        "last_name": "Nolan",
+        "phone_number": "+15559871234",
+        "email": "peter.nolan@example.com",
+        "address": "1 King Street, Fairview"
+    },
+    "emptyOwner": {
+        "first_name": "",
+        "last_name": "",
+        "phone_number": "",
+        "email": "",
+        "address": ""
+    }
 }

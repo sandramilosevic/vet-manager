@@ -22,8 +22,9 @@ function FieldShell({
   required,
   hideLabel,
   id,
+  errorDataCy,
   children,
-}: BaseProps & { id: string; children: ReactNode }) {
+}: BaseProps & { id: string; errorDataCy?: string; children: ReactNode }) {
   return (
     <div className="field">
       <label className={hideLabel ? 'sr-only' : 'field__label'} htmlFor={id}>
@@ -42,7 +43,12 @@ function FieldShell({
       )}
       {/* role=alert so screen readers announce validation failures immediately */}
       {error && (
-        <span className="field__error" id={`${id}-error`} role="alert">
+        <span
+          className="field__error"
+          id={`${id}-error`}
+          data-cy={errorDataCy ?? `${id}-error`}
+          role="alert"
+        >
           {error}
         </span>
       )}
@@ -66,6 +72,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
 ) {
   const generatedId = useId()
   const id = providedId ?? generatedId
+  const dataCy = (rest as Record<string, unknown>)['data-cy'] as string | undefined
 
   return (
     <FieldShell
@@ -75,6 +82,7 @@ export const TextField = forwardRef<HTMLInputElement, TextFieldProps>(function T
       required={required}
       hideLabel={hideLabel}
       id={id}
+      errorDataCy={dataCy ? `${dataCy}-error` : undefined}
     >
       <input
         ref={ref}
@@ -119,6 +127,7 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(funct
 ) {
   const generatedId = useId()
   const id = providedId ?? generatedId
+  const dataCy = (rest as Record<string, unknown>)['data-cy'] as string | undefined
 
   return (
     <FieldShell
@@ -128,6 +137,7 @@ export const SelectField = forwardRef<HTMLSelectElement, SelectFieldProps>(funct
       required={required}
       hideLabel={hideLabel}
       id={id}
+      errorDataCy={dataCy ? `${dataCy}-error` : undefined}
     >
       <select
         ref={ref}
@@ -160,6 +170,7 @@ export const TextAreaField = forwardRef<HTMLTextAreaElement, TextAreaFieldProps>
   ) {
     const generatedId = useId()
     const id = providedId ?? generatedId
+    const dataCy = (rest as Record<string, unknown>)['data-cy'] as string | undefined
 
     return (
       <FieldShell
@@ -169,6 +180,7 @@ export const TextAreaField = forwardRef<HTMLTextAreaElement, TextAreaFieldProps>
         required={required}
         hideLabel={hideLabel}
         id={id}
+        errorDataCy={dataCy ? `${dataCy}-error` : undefined}
       >
         <textarea
           ref={ref}
