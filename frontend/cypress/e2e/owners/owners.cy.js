@@ -2,6 +2,7 @@ import { API } from '../../support/api'
 import ownerList from '../../fixtures/owners/owners-list.json'
 import newOwner from '../../fixtures/owners/new-owner.json'
 
+// Fills a form field, picking the right Cypress command based on element type
 const fillField = (dataCy, value) => {
     cy.get(`[data-cy="${dataCy}"]`).then(($el) => {
         const tagName = $el.prop('tagName').toLowerCase()
@@ -25,6 +26,8 @@ describe('Owners list', () => {
         cy.wait('@ownersRequest')
     })
 
+    // Rendering 
+
     it('renders owner data for an authenticated admin', () => {
         cy.contains('h1', 'Pet owners').should('be.visible')
         cy.get('[data-cy="clinic-name"]').should('contain.text', 'Test Clinic')
@@ -36,6 +39,23 @@ describe('Owners list', () => {
 
         cy.get('[data-cy="login-username"]').should('not.exist')
     })
+
+    it('shows an error state when the owners list fails to load', () => {
+        cy.intercept('GET', API.owners, {
+            statusCode: 500,
+            body: { message: 'Internal server error' },
+        }).as('failedOwnersRequest')
+
+        cy.reload()
+        cy.wait('@failedOwnersRequest')
+
+        cy.contains('Could not load this').should('be.visible')
+        cy.get('[role="alert"]').should('be.visible')
+        cy.get('[data-cy="error-retry-button"]').should('be.visible')
+        cy.get('table').should('not.exist')
+    })
+
+    // Filtering 
 
     it('filters by last name', () => {
         const lastName = ownerList.results[0].last_name
@@ -111,6 +131,15 @@ describe('Owners list', () => {
         cy.get('[data-cy="owner-empty-add-button"]').should('not.exist')
     })
 
+    // Sorting
+
+    // The list loads sorted by last name, ascending, before any click.
+    it('defaults to ascending order by last name on load', () => {
+        cy.get('@ownersRequest.all').then((requests) => {
+            expect(requests[0].request.query).to.include({ ordering: 'last_name' })
+        })
+    })
+
     it('sorts by last name when the column header is clicked', () => {
         cy.get('[data-cy="owner-sort-last-name"]').click()
 
@@ -118,6 +147,83 @@ describe('Owners list', () => {
             .its('request.query')
             .should('include', { ordering: '-last_name' })
     })
+
+    it('switches to descending after clicking last name once', () => {
+        cy.intercept('GET', API.owners, (req) => {
+            if (req.query.ordering === '-last_name') {
+                req.alias = 'descendingByLastName'
+            }
+            req.reply({ statusCode: 200, body: ownerList })
+        })
+
+        cy.get('[data-cy="owner-sort-last-name"]').click()
+
+        cy.wait('@descendingByLastName')
+            .its('request.query')
+            .should('include', { ordering: '-last_name' })
+    })
+
+    // Second click may be served from cache, so check the UI indicator
+    // instead of relying on a fresh network request.
+    it('returns to ascending after clicking last name twice', () => {
+        cy.intercept('GET', API.owners, (req) => {
+            if (req.query.ordering === '-last_name') {
+                req.alias = 'descendingByLastName'
+            }
+            req.reply({ statusCode: 200, body: ownerList })
+        })
+
+        cy.get('[data-cy="owner-sort-last-name"]').click()
+        cy.wait('@descendingByLastName')
+
+        cy.get('[data-cy="owner-sort-last-name"]').click()
+
+        cy.get('[data-cy="owner-sort-last-name"]')
+            .should('have.attr', 'aria-label', 'Sort by last name')
+            .contains('↑')
+    })
+
+    it('order by registration date', () => {
+        cy.intercept('GET', API.owners, (req) => {
+            if (req.query.ordering === 'registration_date') {
+                req.alias = 'sortByRegistrationDate'
+            }
+            req.reply({ statusCode: 200, body: ownerList })
+        })
+
+        cy.get('[data-cy="owner-sort-registration-date"]').click()
+
+        cy.wait('@sortByRegistrationDate')
+            .its('request.query')
+            .should('include', { ordering: 'registration_date' })
+    })
+
+    it('reverses to descending after clicking registration date again', () => {
+        cy.intercept('GET', API.owners, (req) => {
+            if (req.query.ordering === 'registration_date') {
+                req.alias = 'ascendingByRegistrationDate'
+            }
+            req.reply({ statusCode: 200, body: ownerList })
+        })
+
+        cy.get('[data-cy="owner-sort-registration-date"]').click()
+        cy.wait('@ascendingByRegistrationDate')
+
+        cy.intercept('GET', API.owners, (req) => {
+            if (req.query.ordering === '-registration_date') {
+                req.alias = 'descendingByRegistrationDate'
+            }
+            req.reply({ statusCode: 200, body: ownerList })
+        })
+
+        cy.get('[data-cy="owner-sort-registration-date"]').click()
+
+        cy.wait('@descendingByRegistrationDate')
+            .its('request.query')
+            .should('include', { ordering: '-registration_date' })
+    })
+
+    // Create 
 
     it('creates a new owner', () => {
         cy.intercept('POST', API.owners, {
@@ -196,6 +302,8 @@ describe('Owners list', () => {
         cy.contains('h2', 'New owner').should('be.visible')
     })
 
+    // Edit 
+
     it('edits an existing owner', () => {
         cy.intercept('PATCH', API.ownerDetail, {
             statusCode: 200,
@@ -220,6 +328,8 @@ describe('Owners list', () => {
         cy.contains('h2', 'Edit owner').should('not.exist')
     })
 
+    // Delete 
+
     it('deletes an owner after confirming', () => {
         cy.intercept('DELETE', API.ownerDetail, { statusCode: 204 }).as('deleteRequest')
 
@@ -236,20 +346,5 @@ describe('Owners list', () => {
 
         cy.get('[data-cy="toast"]').should('contain.text', 'Mark Peters removed')
         cy.contains('h2', 'Delete this owner?').should('not.exist')
-    })
-
-    it('shows an error state when the owners list fails to load', () => {
-        cy.intercept('GET', API.owners, {
-            statusCode: 500,
-            body: { message: 'Internal server error' },
-        }).as('failedOwnersRequest')
-
-        cy.reload()
-        cy.wait('@failedOwnersRequest')
-
-        cy.contains('Could not load this').should('be.visible')
-        cy.get('[role="alert"]').should('be.visible')
-        cy.get('[data-cy="error-retry-button"]').should('be.visible')
-        cy.get('table').should('not.exist')
     })
 })
