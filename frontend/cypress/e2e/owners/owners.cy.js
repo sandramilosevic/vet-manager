@@ -15,6 +15,25 @@ const fillField = (dataCy, value) => {
     })
 }
 
+// Generates a given number of mock owners, used for pagination scenarios
+// where the exact content doesn't matter, only the count and shape.
+const generateOwners = (count, startId = 1) => {
+    return Array.from({ length: count }, (_, i) => {
+        const id = startId + i
+        return {
+            id,
+            first_name: `First${id}`,
+            last_name: `Last${id}`,
+            email: `owner${id}@example.com`,
+            phone_number: '+15550000000',
+            address: '123 Main St',
+            registration_date: '2026-01-01',
+        }
+    })
+}
+
+const PAGE_SIZE = 15
+
 describe('Owners list', () => {
     beforeEach(() => {
         cy.intercept('GET', API.owners, {
@@ -141,12 +160,16 @@ describe('Owners list', () => {
     })
 
     it('sorts by last name when the column header is clicked', () => {
+        cy.get('[data-cy="owner-sort-last-name"]').find('.table__sort-indicator').should('contain', '↑')
         cy.get('[data-cy="owner-sort-last-name"]').click()
 
         cy.wait('@ownersRequest')
             .its('request.query')
             .should('include', { ordering: '-last_name' })
+
+        cy.get('[data-cy="owner-sort-last-name"]').find('.table__sort-indicator').should('contain', '↓')
     })
+
 
     it('switches to descending after clicking last name once', () => {
         cy.intercept('GET', API.owners, (req) => {
@@ -184,6 +207,8 @@ describe('Owners list', () => {
     })
 
     it('order by registration date', () => {
+        cy.get('[data-cy="owner-sort-registration-date"]').find('.table__sort-indicator').should('contain', '↕')
+
         cy.intercept('GET', API.owners, (req) => {
             if (req.query.ordering === 'registration_date') {
                 req.alias = 'sortByRegistrationDate'
@@ -196,6 +221,8 @@ describe('Owners list', () => {
         cy.wait('@sortByRegistrationDate')
             .its('request.query')
             .should('include', { ordering: 'registration_date' })
+
+        cy.get('[data-cy="owner-sort-registration-date"]').find('.table__sort-indicator').should('contain', '↑')
     })
 
     it('reverses to descending after clicking registration date again', () => {
@@ -207,7 +234,9 @@ describe('Owners list', () => {
         })
 
         cy.get('[data-cy="owner-sort-registration-date"]').click()
+
         cy.wait('@ascendingByRegistrationDate')
+        cy.get('[data-cy="owner-sort-registration-date"]').find('.table__sort-indicator').should('contain', '↑')
 
         cy.intercept('GET', API.owners, (req) => {
             if (req.query.ordering === '-registration_date') {
@@ -328,23 +357,64 @@ describe('Owners list', () => {
         cy.contains('h2', 'Edit owner').should('not.exist')
     })
 
+    it('cancel editing owner', () => {
+        const owner = ownerList.results[0]
+        const fullName = `${owner.last_name}, ${owner.first_name}`
+
+        cy.contains('[data-cy="owner-row"]', fullName).within(() => {
+            cy.get('[data-cy="owner-edit-button"]').click()
+        })
+
+        cy.contains('h2', 'Edit owner').should('be.visible')
+
+        cy.get('[data-cy="owner-form-cancel"]').click()
+
+        cy.contains('[data-cy="owner-row"]', fullName).should('be.visible')
+
+    })
+
     // Delete 
 
     it('deletes an owner after confirming', () => {
-        cy.intercept('DELETE', API.ownerDetail, { statusCode: 204 }).as('deleteRequest')
+        const owner = ownerList.results[0]
+        const fullName = `${owner.last_name}, ${owner.first_name}`
 
-        cy.contains('[data-cy="owner-row"]', 'Peters, Mark').within(() => {
+        cy.intercept('DELETE', API.ownerDetail, {
+            statusCode: 204,
+        }).as('deleteRequest')
+
+        cy.contains('[data-cy="owner-row"]', fullName).within(() => {
             cy.get('[data-cy="owner-delete-button"]').click()
         })
 
         cy.contains('h2', 'Delete this owner?').should('be.visible')
-        cy.contains('Mark').should('be.visible')
+        cy.contains(owner.first_name).should('be.visible')
         cy.get('@deleteRequest.all').should('have.length', 0)
 
         cy.get('[data-cy="confirm-dialog-confirm"]').click()
         cy.wait('@deleteRequest')
 
-        cy.get('[data-cy="toast"]').should('contain.text', 'Mark Peters removed')
+        cy.get('[data-cy="toast"]')
+            .should('contain.text', `${owner.first_name} ${owner.last_name} removed`)
+
         cy.contains('h2', 'Delete this owner?').should('not.exist')
     })
+
+    it('cancel deleting', () => {
+        const owner = ownerList.results[1]
+        const fullName = `${owner.last_name}, ${owner.first_name}`
+
+        cy.contains('[data-cy="owner-row"]', fullName).within(() => {
+            cy.get('[data-cy="owner-delete-button"]').click()
+        })
+
+        cy.contains('h2', 'Delete this owner?').should('be.visible')
+        cy.contains(owner.first_name).should('be.visible')
+
+        cy.get('[data-cy="confirm-dialog-cancel"]').click()
+
+        cy.contains('[data-cy="owner-row"]', fullName).should('be.visible')
+    })
+
+
 })
