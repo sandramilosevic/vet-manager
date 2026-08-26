@@ -34,6 +34,23 @@ describe('Owners list', () => {
         cy.get('[data-cy="login-username"]').should('not.exist')
     })
 
+    it('shows a loading skeleton while the owners list is being fetched', () => {
+        cy.intercept('GET', API.owners, {
+            statusCode: 200,
+            body: ownerList,
+            delay: 500,
+        }).as('slowOwnersRequest')
+
+        cy.reload()
+
+        OwnersPage.loadingSkeleton().should('be.visible')
+
+        cy.wait('@slowOwnersRequest')
+
+        OwnersPage.loadingSkeleton().should('not.exist')
+        OwnersPage.ownerRows().should('have.length', ownerList.results.length)
+    })
+
     it('shows an error state when the owners list fails to load', () => {
         cy.intercept('GET', API.owners, {
             statusCode: 500,
@@ -137,6 +154,80 @@ describe('Owners list', () => {
 
         cy.contains('No owners match those filters').should('be.visible')
         OwnersPage.emptyAddButton().should('not.exist')
+    })
+
+    it('does not show the clear filters button when no filters are applied', () => {
+        OwnersPage.clearFiltersButton().should('not.exist')
+    })
+
+    it('clears all filters and reloads the unfiltered list when clear filters is clicked', () => {
+        cy.intercept('GET', API.owners, (req) => {
+            if (req.query.last_name__icontains) {
+                req.alias = 'filteredRequest'
+            }
+
+            req.reply({
+                statusCode: 200,
+                body: ownerList,
+            })
+        })
+
+        OwnersPage.typeFilterLastName(ownerList.results[0].last_name)
+        cy.wait('@filteredRequest')
+
+        OwnersPage.filterFirstName().type('anything')
+        OwnersPage.filterEmail().type('anything@example.com')
+
+        cy.intercept('GET', API.owners, (req) => {
+            if (
+                !req.query.last_name__icontains &&
+                !req.query.first_name__icontains &&
+                !req.query.email__icontains
+            ) {
+                req.alias = 'clearedRequest'
+            }
+
+            req.reply({
+                statusCode: 200,
+                body: ownerList,
+            })
+        })
+
+        OwnersPage.clearFilters()
+
+        cy.wait('@clearedRequest')
+            .its('request.query')
+            .should('not.have.property', 'last_name__icontains')
+
+        OwnersPage.filterLastName().should('have.value', '')
+        OwnersPage.filterFirstName().should('have.value', '')
+        OwnersPage.filterEmail().should('have.value', '')
+        OwnersPage.clearFiltersButton().should('not.exist')
+    })
+
+    // Navigation
+
+    it('navigates to the owner detail page when a row is clicked', () => {
+        const owner = ownerList.results[0]
+        const fullName = `${owner.last_name}, ${owner.first_name}`
+
+        cy.intercept('GET', API.ownerDetail, {
+            statusCode: 200,
+            body: owner,
+        }).as('ownerDetailRequest')
+
+        cy.intercept('GET', '**/api/v1/pets/**', {
+            statusCode: 200,
+            body: { count: 0, next: null, previous: null, results: [] },
+        })
+
+        OwnersPage.linkFor(fullName).click()
+
+        cy.url().should('include', `/owners/${owner.id}`)
+        cy.wait('@ownerDetailRequest')
+            .then((interception) => {
+                expect(interception.request.url).to.include(`/owners/${owner.id}/`)
+            })
     })
 
     // Sorting
@@ -374,11 +465,16 @@ describe('Owners list', () => {
 
         OwnerForm.submit()
 
-        cy.wait('@updateRequest')
-            .its('request.body')
-            .should('deep.include', {
+        cy.wait('@updateRequest').then((interception) => {
+            // Guards against the PATCH silently landing on the wrong
+            // owner — API.ownerDetail is a wildcard glob, so this is the
+            // only place verifying the id in the URL matches the row we
+            // actually clicked.
+            expect(interception.request.url).to.include(`/owners/${owner.id}/`)
+            expect(interception.request.body).to.deep.include({
                 phone_number: '+15550009999',
             })
+        })
 
         OwnersPage.toast().should('contain.text', 'Owner updated')
         OwnerForm.heading('Edit owner').should('not.exist')
@@ -415,7 +511,12 @@ describe('Owners list', () => {
 
         ConfirmDialog.confirm()
 
-        cy.wait('@deleteRequest')
+        cy.wait('@deleteRequest').then((interception) => {
+            // Same reasoning as the edit test: API.ownerDetail is a
+            // wildcard glob, so we explicitly check the id in the URL
+            // instead of trusting that "some" DELETE fired.
+            expect(interception.request.url).to.include(`/owners/${owner.id}/`)
+        })
 
         OwnersPage.toast()
             .should(
@@ -424,6 +525,45 @@ describe('Owners list', () => {
             )
 
         ConfirmDialog.heading('Delete this owner?').should('not.exist')
+    })
+
+    it('removes the owner from the list after a soft delete, without deleting other rows', () => {
+        // The backend never hard-deletes an owner (DELETE sets is_deleted=True,
+        // deleted_at=now — see apps/owners/views.py). The frontend relies on
+        // query invalidation to refetch the list afterwards, so this test
+        // proves that refetch actually happens and the row disappears, not
+        // just that the toast text is correct.
+        const owner = ownerList.results[0]
+        const fullName = `${owner.last_name}, ${owner.first_name}`
+        const remaining = ownerList.results.filter((o) => o.id !== owner.id)
+
+        cy.intercept('DELETE', API.ownerDetail, {
+            statusCode: 204,
+        }).as('deleteRequest')
+
+        cy.intercept('GET', API.owners, {
+            statusCode: 200,
+            body: {
+                count: remaining.length,
+                next: null,
+                previous: null,
+                results: remaining,
+            },
+        }).as('refetchAfterDelete')
+
+        OwnersPage.deleteButtonFor(fullName).click()
+        ConfirmDialog.confirm()
+
+        cy.wait('@deleteRequest')
+        cy.wait('@refetchAfterDelete')
+
+        OwnersPage.ownerRow(fullName).should('not.exist')
+        OwnersPage.ownerRows().should('have.length', remaining.length)
+
+        remaining.forEach((other) => {
+            OwnersPage.ownerRow(`${other.last_name}, ${other.first_name}`)
+                .should('be.visible')
+        })
     })
 
     it('cancels deleting an owner', () => {

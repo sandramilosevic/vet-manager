@@ -17,6 +17,9 @@ export const OwnersPage = {
     typeFilterFirstName: (value) => cy.get('#filter-first-name').type(value),
     typeFilterEmail: (value) => cy.get('#filter-email').type(value),
 
+    clearFiltersButton: () => cy.get('[data-cy="owner-clear-filters-button"]'),
+    clearFilters: () => OwnersPage.clearFiltersButton().click(),
+
     // Rows
     ownerRows: () => cy.get('[data-cy="owner-row"]'),
     ownerRow: (fullName) => cy.contains('[data-cy="owner-row"]', fullName),
@@ -26,6 +29,9 @@ export const OwnersPage = {
     },
     deleteButtonFor: (fullName) => {
         return OwnersPage.ownerRow(fullName).find('[data-cy="owner-delete-button"]')
+    },
+    linkFor: (fullName) => {
+        return OwnersPage.ownerRow(fullName).find('a')
     },
 
     // Sorting
@@ -38,8 +44,9 @@ export const OwnersPage = {
     paginationNext: () => cy.get('[data-cy="pagination-next"]'),
     paginationPrevious: () => cy.get('[data-cy="pagination-previous"]'),
 
-    // Error / empty states
+    // Error / empty / loading states
     retryButton: () => cy.get('[data-cy="error-retry-button"]'),
+    loadingSkeleton: () => cy.get('[data-cy="table-skeleton"]'),
 
     // Toast
     toast: () => cy.get('[data-cy="toast"]'),

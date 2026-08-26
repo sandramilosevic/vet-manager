@@ -22,7 +22,7 @@ export function LoadingState({ label = 'Loading…' }: { label?: string }) {
 /** Placeholder rows that match the table shape, avoiding a layout jump. */
 export function TableSkeleton({ columns, rows = 5 }: { columns: number; rows?: number }) {
   return (
-    <tbody aria-hidden="true">
+    <tbody aria-hidden="true" data-cy="table-skeleton">
       {Array.from({ length: rows }).map((_, rowIndex) => (
         <tr key={rowIndex}>
           {Array.from({ length: columns }).map((__, colIndex) => (
