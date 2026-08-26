@@ -14,11 +14,8 @@ export const OwnerForm = {
     phoneNumberError: () => cy.get('[data-cy="owner-phone-number-error"]'),
     emailError: () => cy.get('[data-cy="owner-email-error"]'),
 
-    submitButton: () => cy.get('[data-cy="owner-form-submit"]'),
-    cancelButton: () => cy.get('[data-cy="owner-form-cancel"]'),
-
-    submit: () => cy.get('[data-cy="owner-form-submit"]'),
-    cancel: () => cy.get('[data-cy="owner-form-cancel"]'),
+    submit: () => cy.get('[data-cy="owner-form-submit"]').click(),
+    cancel: () => cy.get('[data-cy="owner-form-cancel"]').click(),
 
     fillAll: (owner) => {
         cy.fillField('owner-first-name', owner.first_name)
@@ -26,5 +23,5 @@ export const OwnerForm = {
         cy.fillField('owner-phone-number', owner.phone_number)
         cy.fillField('owner-email', owner.email)
         cy.fillField('owner-address', owner.address)
-    }
+    },
 }

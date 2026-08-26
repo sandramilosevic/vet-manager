@@ -1,6 +1,7 @@
 import { API } from '../../support/api'
 import ownerList from '../../fixtures/owners/owners-list.json'
 import { generateOwners } from '../../support/utils/generate-owners'
+import { OwnersPage } from '../../pages/OwnersPage'
 
 const PAGE_SIZE = 15
 
@@ -55,14 +56,13 @@ describe('Owners list pagination', () => {
         cy.reload()
         cy.wait('@firstPage')
 
-        cy.get('[data-cy="owner-row"]')
-            .should('have.length', PAGE_SIZE)
+        OwnersPage.ownerRows().should('have.length', PAGE_SIZE)
 
-        cy.get('[data-cy="pagination-next"]')
+        OwnersPage.paginationNext()
             .should('be.visible')
             .and('not.be.disabled')
 
-        cy.get('[data-cy="pagination-previous"]')
+        OwnersPage.paginationPrevious()
             .should('be.disabled')
     })
 
@@ -74,14 +74,13 @@ describe('Owners list pagination', () => {
         cy.reload()
         cy.wait('@firstPage')
 
-        cy.get('[data-cy="pagination-next"]').click()
+        OwnersPage.paginationNext().click()
 
         cy.wait('@secondPage')
             .its('request.query')
             .should('include', { page: '2' })
 
-        cy.get('[data-cy="owner-row"]')
-            .should('have.length', 5)
+        OwnersPage.ownerRows().should('have.length', 5)
     })
 
     it('disables the next button on the last page', () => {
@@ -92,14 +91,14 @@ describe('Owners list pagination', () => {
         cy.reload()
         cy.wait('@firstPage')
 
-        cy.get('[data-cy="pagination-next"]').click()
+        OwnersPage.paginationNext().click()
 
         cy.wait('@secondPage')
 
-        cy.get('[data-cy="pagination-next"]')
+        OwnersPage.paginationNext()
             .should('be.disabled')
 
-        cy.get('[data-cy="pagination-previous"]')
+        OwnersPage.paginationPrevious()
             .should('not.be.disabled')
     })
 
@@ -111,17 +110,16 @@ describe('Owners list pagination', () => {
         cy.reload()
         cy.wait('@firstPage')
 
-        cy.get('[data-cy="pagination-next"]').click()
+        OwnersPage.paginationNext().click()
         cy.wait('@secondPage')
 
-        cy.get('[data-cy="pagination-previous"]').click()
+        OwnersPage.paginationPrevious().click()
 
         cy.wait('@firstPage')
             .its('request.query')
             .should('include', { page: '1' })
 
-        cy.get('[data-cy="owner-row"]')
-            .should('have.length', PAGE_SIZE)
+        OwnersPage.ownerRows().should('have.length', PAGE_SIZE)
     })
 
     it('does not show pagination controls when all owners fit on one page', () => {
@@ -130,7 +128,7 @@ describe('Owners list pagination', () => {
         cy.intercept('GET', API.owners, {
             statusCode: 200,
             body: {
-                count: 10,
+                count: owners.length,
                 next: null,
                 previous: null,
                 results: owners,
@@ -140,14 +138,10 @@ describe('Owners list pagination', () => {
         cy.reload()
         cy.wait('@singlePage')
 
-        cy.get('[data-cy="owner-row"]')
-            .should('have.length', 10)
+        OwnersPage.ownerRows().should('have.length', owners.length)
 
-        cy.get('[data-cy="pagination-next"]')
-            .should('not.exist')
-
-        cy.get('[data-cy="pagination-previous"]')
-            .should('not.exist')
+        OwnersPage.paginationNext().should('not.exist')
+        OwnersPage.paginationPrevious().should('not.exist')
     })
 
     it('resets to the first page when a filter is applied', () => {
@@ -160,12 +154,14 @@ describe('Owners list pagination', () => {
                 req.reply({
                     statusCode: 200,
                     body: {
-                        count: 20,
+                        count: owners.length,
                         next: `${API.owners}?page=2`,
                         previous: null,
                         results: owners.slice(0, PAGE_SIZE),
                     },
                 })
+
+                return
             }
 
             if (req.query.page === '2') {
@@ -174,26 +170,40 @@ describe('Owners list pagination', () => {
                 req.reply({
                     statusCode: 200,
                     body: {
-                        count: 20,
+                        count: owners.length,
                         next: null,
                         previous: `${API.owners}?page=1`,
                         results: owners.slice(PAGE_SIZE),
                     },
                 })
+
+                return
             }
 
             if (req.query.last_name__icontains === 'Last1') {
                 req.alias = 'filteredRequest'
+
+                req.reply({
+                    statusCode: 200,
+                    body: {
+                        count: 11,
+                        next: null,
+                        previous: null,
+                        results: owners.filter((owner) =>
+                            owner.last_name.includes('Last1'),
+                        ),
+                    },
+                })
             }
         })
 
         cy.reload()
         cy.wait('@firstPage')
 
-        cy.get('[data-cy="pagination-next"]').click()
+        OwnersPage.paginationNext().click()
         cy.wait('@secondPage')
 
-        cy.get('#filter-last-name').type('Last1')
+        OwnersPage.typeFilterLastName('Last1')
 
         cy.wait('@filteredRequest')
             .its('request.query')
@@ -201,5 +211,7 @@ describe('Owners list pagination', () => {
                 page: '1',
                 last_name__icontains: 'Last1',
             })
+
+        OwnersPage.ownerRows().should('have.length', 11)
     })
 })

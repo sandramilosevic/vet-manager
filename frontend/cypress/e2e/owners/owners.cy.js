@@ -1,11 +1,9 @@
 import { API } from '../../support/api'
-import { generateOwners } from '../../support/utils/generate-owners'
 import ownerList from '../../fixtures/owners/owners-list.json'
 import newOwner from '../../fixtures/owners/new-owner.json'
 import { OwnersPage } from '../../pages/OwnersPage'
 import { OwnerForm } from '../../pages/OwnerForm'
-
-const PAGE_SIZE = 15
+import { ConfirmDialog } from '../../pages/ConfirmDialog'
 
 describe('Owners list', () => {
     beforeEach(() => {
@@ -134,6 +132,7 @@ describe('Owners list', () => {
         }).as('emptyOwnersRequest')
 
         OwnersPage.typeFilterLastName('Nonexistent')
+
         cy.wait('@emptyOwnersRequest')
 
         cy.contains('No owners match those filters').should('be.visible')
@@ -369,7 +368,10 @@ describe('Owners list', () => {
         OwnerForm.heading('Edit owner').should('be.visible')
         OwnerForm.firstName().should('have.value', owner.first_name)
 
-        cy.fillField('owner-phone-number', '+15550009999')
+        OwnerForm.phoneNumber()
+            .clear()
+            .type('+15550009999')
+
         OwnerForm.submit()
 
         cy.wait('@updateRequest')
@@ -406,12 +408,12 @@ describe('Owners list', () => {
 
         OwnersPage.deleteButtonFor(fullName).click()
 
-        cy.contains('h2', 'Delete this owner?').should('be.visible')
+        ConfirmDialog.heading('Delete this owner?').should('be.visible')
         cy.contains(owner.first_name).should('be.visible')
 
         cy.get('@deleteRequest.all').should('have.length', 0)
 
-        cy.get('[data-cy="confirm-dialog-confirm"]').click()
+        ConfirmDialog.confirm()
 
         cy.wait('@deleteRequest')
 
@@ -421,7 +423,7 @@ describe('Owners list', () => {
                 `${owner.first_name} ${owner.last_name} removed`,
             )
 
-        cy.contains('h2', 'Delete this owner?').should('not.exist')
+        ConfirmDialog.heading('Delete this owner?').should('not.exist')
     })
 
     it('cancels deleting an owner', () => {
@@ -430,10 +432,10 @@ describe('Owners list', () => {
 
         OwnersPage.deleteButtonFor(fullName).click()
 
-        cy.contains('h2', 'Delete this owner?').should('be.visible')
+        ConfirmDialog.heading('Delete this owner?').should('be.visible')
         cy.contains(owner.first_name).should('be.visible')
 
-        cy.get('[data-cy="confirm-dialog-cancel"]').click()
+        ConfirmDialog.cancel()
 
         OwnersPage.ownerRow(fullName).should('be.visible')
     })
