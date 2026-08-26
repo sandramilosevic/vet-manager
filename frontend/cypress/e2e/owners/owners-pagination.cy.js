@@ -1,24 +1,40 @@
 import { API } from '../../support/api'
 import ownerList from '../../fixtures/owners/owners-list.json'
+import { generateOwners } from '../../support/utils/generate-owners'
 
-// Generates a given number of mock owners, used for pagination scenarios
-// where the exact content doesn't matter, only the count and shape.
-const generateOwners = (count, startId = 1) => {
-    return Array.from({ length: count }, (_, i) => {
-        const id = startId + i
-        return {
-            id,
-            first_name: `First${id}`,
-            last_name: `Last${id}`,
-            email: `owner${id}@example.com`,
-            phone_number: '+15550000000',
-            address: '123 Main St',
-            registration_date: '2026-01-01',
+const PAGE_SIZE = 15
+
+const interceptPaginatedOwners = (owners) => {
+    cy.intercept('GET', API.owners, (req) => {
+        if (!req.query.page || req.query.page === '1') {
+            req.alias = 'firstPage'
+
+            req.reply({
+                statusCode: 200,
+                body: {
+                    count: owners.length,
+                    next: `${API.owners}?page=2`,
+                    previous: null,
+                    results: owners.slice(0, PAGE_SIZE),
+                },
+            })
+        }
+
+        if (req.query.page === '2') {
+            req.alias = 'secondPage'
+
+            req.reply({
+                statusCode: 200,
+                body: {
+                    count: owners.length,
+                    next: null,
+                    previous: `${API.owners}?page=1`,
+                    results: owners.slice(PAGE_SIZE),
+                },
+            })
         }
     })
 }
-
-const PAGE_SIZE = 15
 
 describe('Owners list pagination', () => {
     beforeEach(() => {
@@ -34,59 +50,26 @@ describe('Owners list pagination', () => {
     it('shows only 15 owners on the first page when there are more', () => {
         const owners = generateOwners(20)
 
-        cy.intercept('GET', API.owners, (req) => {
-            if (!req.query.page || req.query.page === '1') {
-                req.alias = 'firstPage'
-                req.reply({
-                    statusCode: 200,
-                    body: {
-                        count: 20,
-                        next: `${API.owners}?page=2`,
-                        previous: null,
-                        results: owners.slice(0, PAGE_SIZE),
-                    },
-                })
-            }
-        })
+        interceptPaginatedOwners(owners)
 
         cy.reload()
         cy.wait('@firstPage')
 
-        cy.get('[data-cy="owner-row"]').should('have.length', PAGE_SIZE)
-        cy.get('[data-cy="pagination-next"]').should('be.visible').and('not.be.disabled')
-        cy.get('[data-cy="pagination-previous"]').should('be.disabled')
+        cy.get('[data-cy="owner-row"]')
+            .should('have.length', PAGE_SIZE)
+
+        cy.get('[data-cy="pagination-next"]')
+            .should('be.visible')
+            .and('not.be.disabled')
+
+        cy.get('[data-cy="pagination-previous"]')
+            .should('be.disabled')
     })
 
     it('requests the second page and shows the remaining owners when next is clicked', () => {
         const owners = generateOwners(20)
 
-        cy.intercept('GET', API.owners, (req) => {
-            if (!req.query.page || req.query.page === '1') {
-                req.alias = 'firstPage'
-                req.reply({
-                    statusCode: 200,
-                    body: {
-                        count: 20,
-                        next: `${API.owners}?page=2`,
-                        previous: null,
-                        results: owners.slice(0, PAGE_SIZE),
-                    },
-                })
-            }
-
-            if (req.query.page === '2') {
-                req.alias = 'secondPage'
-                req.reply({
-                    statusCode: 200,
-                    body: {
-                        count: 20,
-                        next: null,
-                        previous: `${API.owners}?page=1`,
-                        results: owners.slice(PAGE_SIZE, 20),
-                    },
-                })
-            }
-        })
+        interceptPaginatedOwners(owners)
 
         cy.reload()
         cy.wait('@firstPage')
@@ -97,84 +80,33 @@ describe('Owners list pagination', () => {
             .its('request.query')
             .should('include', { page: '2' })
 
-        cy.get('[data-cy="owner-row"]').should('have.length', 20 - PAGE_SIZE)
+        cy.get('[data-cy="owner-row"]')
+            .should('have.length', 5)
     })
 
     it('disables the next button on the last page', () => {
         const owners = generateOwners(20)
 
-        cy.intercept('GET', API.owners, (req) => {
-            if (!req.query.page || req.query.page === '1') {
-                req.alias = 'firstPage'
-                req.reply({
-                    statusCode: 200,
-                    body: {
-                        count: 20,
-                        next: `${API.owners}?page=2`,
-                        previous: null,
-                        results: owners.slice(0, PAGE_SIZE),
-                    },
-                })
-            }
-
-            if (req.query.page === '2') {
-                req.alias = 'secondPage'
-                req.reply({
-                    statusCode: 200,
-                    body: {
-                        count: 20,
-                        next: null,
-                        previous: `${API.owners}?page=1`,
-                        results: owners.slice(PAGE_SIZE, 20),
-                    },
-                })
-            }
-        })
+        interceptPaginatedOwners(owners)
 
         cy.reload()
         cy.wait('@firstPage')
 
         cy.get('[data-cy="pagination-next"]').click()
+
         cy.wait('@secondPage')
 
-        cy.get('[data-cy="pagination-next"]').should('be.disabled')
-        cy.get('[data-cy="pagination-previous"]').should('not.be.disabled')
+        cy.get('[data-cy="pagination-next"]')
+            .should('be.disabled')
+
+        cy.get('[data-cy="pagination-previous"]')
+            .should('not.be.disabled')
     })
 
     it('requests the previous page when previous is clicked', () => {
         const owners = generateOwners(20)
 
-        cy.intercept('GET', API.owners, (req) => {
-            if (!req.query.page || req.query.page === '1') {
-                req.alias = 'firstPage'
-                req.reply({
-                    statusCode: 200,
-                    body: {
-                        count: 20,
-                        next: `${API.owners}?page=2`,
-                        previous: null,
-                        results: owners.slice(0, PAGE_SIZE),
-                    },
-                })
-            }
-
-            if (req.query.page === '2') {
-                req.alias = 'secondPage'
-                req.reply({
-                    statusCode: 200,
-                    body: {
-                        count: 20,
-                        next: null,
-                        previous: `${API.owners}?page=1`,
-                        results: owners.slice(PAGE_SIZE, 20),
-                    },
-                })
-            }
-
-            if (req.query.page === '1' && req.alias === undefined) {
-                req.alias = 'backToFirstPage'
-            }
-        })
+        interceptPaginatedOwners(owners)
 
         cy.reload()
         cy.wait('@firstPage')
@@ -184,11 +116,12 @@ describe('Owners list pagination', () => {
 
         cy.get('[data-cy="pagination-previous"]').click()
 
-        cy.wait('@backToFirstPage')
+        cy.wait('@firstPage')
             .its('request.query')
             .should('include', { page: '1' })
 
-        cy.get('[data-cy="owner-row"]').should('have.length', PAGE_SIZE)
+        cy.get('[data-cy="owner-row"]')
+            .should('have.length', PAGE_SIZE)
     })
 
     it('does not show pagination controls when all owners fit on one page', () => {
@@ -207,9 +140,14 @@ describe('Owners list pagination', () => {
         cy.reload()
         cy.wait('@singlePage')
 
-        cy.get('[data-cy="owner-row"]').should('have.length', 10)
-        cy.get('[data-cy="pagination-next"]').should('not.exist')
-        cy.get('[data-cy="pagination-previous"]').should('not.exist')
+        cy.get('[data-cy="owner-row"]')
+            .should('have.length', 10)
+
+        cy.get('[data-cy="pagination-next"]')
+            .should('not.exist')
+
+        cy.get('[data-cy="pagination-previous"]')
+            .should('not.exist')
     })
 
     it('resets to the first page when a filter is applied', () => {
@@ -218,6 +156,7 @@ describe('Owners list pagination', () => {
         cy.intercept('GET', API.owners, (req) => {
             if (!req.query.page || req.query.page === '1') {
                 req.alias = 'firstPage'
+
                 req.reply({
                     statusCode: 200,
                     body: {
@@ -231,13 +170,14 @@ describe('Owners list pagination', () => {
 
             if (req.query.page === '2') {
                 req.alias = 'secondPage'
+
                 req.reply({
                     statusCode: 200,
                     body: {
                         count: 20,
                         next: null,
                         previous: `${API.owners}?page=1`,
-                        results: owners.slice(PAGE_SIZE, 20),
+                        results: owners.slice(PAGE_SIZE),
                     },
                 })
             }
@@ -257,6 +197,9 @@ describe('Owners list pagination', () => {
 
         cy.wait('@filteredRequest')
             .its('request.query')
-            .should('include', { page: '1', last_name__icontains: 'Last1' })
+            .should('include', {
+                page: '1',
+                last_name__icontains: 'Last1',
+            })
     })
 })

@@ -1,36 +1,9 @@
 import { API } from '../../support/api'
+import { generateOwners } from '../../support/utils/generate-owners'
 import ownerList from '../../fixtures/owners/owners-list.json'
 import newOwner from '../../fixtures/owners/new-owner.json'
-
-// Fills a form field, picking the right Cypress command based on element type
-const fillField = (dataCy, value) => {
-    cy.get(`[data-cy="${dataCy}"]`).then(($el) => {
-        const tagName = $el.prop('tagName').toLowerCase()
-
-        if (tagName === 'select') {
-            cy.wrap($el).select(value)
-        } else {
-            cy.wrap($el).clear().type(value)
-        }
-    })
-}
-
-// Generates a given number of mock owners, used for pagination scenarios
-// where the exact content doesn't matter, only the count and shape.
-const generateOwners = (count, startId = 1) => {
-    return Array.from({ length: count }, (_, i) => {
-        const id = startId + i
-        return {
-            id,
-            first_name: `First${id}`,
-            last_name: `Last${id}`,
-            email: `owner${id}@example.com`,
-            phone_number: '+15550000000',
-            address: '123 Main St',
-            registration_date: '2026-01-01',
-        }
-    })
-}
+import { OwnersPage } from '../../pages/OwnersPage'
+import { OwnerForm } from '../../pages/OwnerForm'
 
 const PAGE_SIZE = 15
 
@@ -45,14 +18,18 @@ describe('Owners list', () => {
         cy.wait('@ownersRequest')
     })
 
-    // Rendering 
+    // Rendering
 
     it('renders owner data for an authenticated admin', () => {
-        cy.contains('h1', 'Pet owners').should('be.visible')
-        cy.get('[data-cy="clinic-name"]').should('contain.text', 'Test Clinic')
+        OwnersPage.heading().should('be.visible')
+        OwnersPage.clinicName().should('contain.text', 'Test Clinic')
 
         ownerList.results.forEach((owner) => {
-            cy.contains('a', `${owner.last_name}, ${owner.first_name}`.trim()).should('be.visible')
+            cy.contains(
+                'a',
+                `${owner.last_name}, ${owner.first_name}`.trim(),
+            ).should('be.visible')
+
             cy.contains('td', owner.email).should('be.visible')
         })
 
@@ -70,11 +47,11 @@ describe('Owners list', () => {
 
         cy.contains('Could not load this').should('be.visible')
         cy.get('[role="alert"]').should('be.visible')
-        cy.get('[data-cy="error-retry-button"]').should('be.visible')
+        OwnersPage.retryButton().should('be.visible')
         cy.get('table').should('not.exist')
     })
 
-    // Filtering 
+    // Filtering
 
     it('filters by last name', () => {
         const lastName = ownerList.results[0].last_name
@@ -90,11 +67,13 @@ describe('Owners list', () => {
             })
         })
 
-        cy.get('#filter-last-name').type(lastName)
+        OwnersPage.typeFilterLastName(lastName)
 
         cy.wait('@filterByLastName')
             .its('request.query')
-            .should('include', { last_name__icontains: lastName })
+            .should('include', {
+                last_name__icontains: lastName,
+            })
     })
 
     it('filters by first name', () => {
@@ -111,11 +90,13 @@ describe('Owners list', () => {
             })
         })
 
-        cy.get('#filter-first-name').type(firstName)
+        OwnersPage.typeFilterFirstName(firstName)
 
         cy.wait('@filterByFirstName')
             .its('request.query')
-            .should('include', { first_name__icontains: firstName })
+            .should('include', {
+                first_name__icontains: firstName,
+            })
     })
 
     it('filters by email address', () => {
@@ -132,97 +113,129 @@ describe('Owners list', () => {
             })
         })
 
-        cy.get('#filter-email').type(email)
+        OwnersPage.typeFilterEmail(email)
 
-        cy.wait('@filterByEmail').its('request.query').should('include', { email__icontains: email })
+        cy.wait('@filterByEmail')
+            .its('request.query')
+            .should('include', {
+                email__icontains: email,
+            })
     })
 
     it('shows an empty state when a filter matches nothing', () => {
         cy.intercept('GET', API.owners, {
             statusCode: 200,
-            body: { count: 0, next: null, previous: null, results: [] },
+            body: {
+                count: 0,
+                next: null,
+                previous: null,
+                results: [],
+            },
         }).as('emptyOwnersRequest')
 
-        cy.get('#filter-last-name').type('Nonexistent')
+        OwnersPage.typeFilterLastName('Nonexistent')
         cy.wait('@emptyOwnersRequest')
 
         cy.contains('No owners match those filters').should('be.visible')
-        cy.get('[data-cy="owner-empty-add-button"]').should('not.exist')
+        OwnersPage.emptyAddButton().should('not.exist')
     })
 
     // Sorting
 
-    // The list loads sorted by last name, ascending, before any click.
     it('defaults to ascending order by last name on load', () => {
         cy.get('@ownersRequest.all').then((requests) => {
-            expect(requests[0].request.query).to.include({ ordering: 'last_name' })
+            expect(requests[0].request.query).to.include({
+                ordering: 'last_name',
+            })
         })
     })
 
     it('sorts by last name when the column header is clicked', () => {
-        cy.get('[data-cy="owner-sort-last-name"]').find('.table__sort-indicator').should('contain', '↑')
-        cy.get('[data-cy="owner-sort-last-name"]').click()
+        OwnersPage.sortIndicatorFor(OwnersPage.sortByLastName)
+            .should('contain', '↑')
+
+        OwnersPage.sortByLastName().click()
 
         cy.wait('@ownersRequest')
             .its('request.query')
-            .should('include', { ordering: '-last_name' })
+            .should('include', {
+                ordering: '-last_name',
+            })
 
-        cy.get('[data-cy="owner-sort-last-name"]').find('.table__sort-indicator').should('contain', '↓')
+        OwnersPage.sortIndicatorFor(OwnersPage.sortByLastName)
+            .should('contain', '↓')
     })
-
 
     it('switches to descending after clicking last name once', () => {
         cy.intercept('GET', API.owners, (req) => {
             if (req.query.ordering === '-last_name') {
                 req.alias = 'descendingByLastName'
             }
-            req.reply({ statusCode: 200, body: ownerList })
+
+            req.reply({
+                statusCode: 200,
+                body: ownerList,
+            })
         })
 
-        cy.get('[data-cy="owner-sort-last-name"]').click()
+        OwnersPage.sortByLastName().click()
 
         cy.wait('@descendingByLastName')
             .its('request.query')
-            .should('include', { ordering: '-last_name' })
+            .should('include', {
+                ordering: '-last_name',
+            })
     })
 
-    // Second click may be served from cache, so check the UI indicator
-    // instead of relying on a fresh network request.
     it('returns to ascending after clicking last name twice', () => {
         cy.intercept('GET', API.owners, (req) => {
             if (req.query.ordering === '-last_name') {
                 req.alias = 'descendingByLastName'
             }
-            req.reply({ statusCode: 200, body: ownerList })
+
+            req.reply({
+                statusCode: 200,
+                body: ownerList,
+            })
         })
 
-        cy.get('[data-cy="owner-sort-last-name"]').click()
+        OwnersPage.sortByLastName().click()
         cy.wait('@descendingByLastName')
 
-        cy.get('[data-cy="owner-sort-last-name"]').click()
+        OwnersPage.sortByLastName().click()
 
-        cy.get('[data-cy="owner-sort-last-name"]')
+        OwnersPage.sortIndicatorFor(OwnersPage.sortByLastName)
+            .should('contain', '↑')
+
+        OwnersPage.sortByLastName()
             .should('have.attr', 'aria-label', 'Sort by last name')
-            .contains('↑')
     })
 
-    it('order by registration date', () => {
-        cy.get('[data-cy="owner-sort-registration-date"]').find('.table__sort-indicator').should('contain', '↕')
+    it('orders by registration date', () => {
+        OwnersPage.sortIndicatorFor(OwnersPage.sortByRegistrationDate)
+            .should('contain', '↕')
 
         cy.intercept('GET', API.owners, (req) => {
             if (req.query.ordering === 'registration_date') {
                 req.alias = 'sortByRegistrationDate'
             }
-            req.reply({ statusCode: 200, body: ownerList })
+
+            req.reply({
+                statusCode: 200,
+                body: ownerList,
+            })
         })
 
-        cy.get('[data-cy="owner-sort-registration-date"]').click()
+        OwnersPage.sortByRegistrationDate().click()
 
         cy.wait('@sortByRegistrationDate')
             .its('request.query')
-            .should('include', { ordering: 'registration_date' })
+            .should('include', {
+                ordering: 'registration_date',
+            })
 
-        cy.get('[data-cy="owner-sort-registration-date"]').find('.table__sort-indicator').should('contain', '↑')
+        OwnersPage.sortIndicatorFor(OwnersPage.sortByRegistrationDate)
+            .should('contain', '↑')
     })
 
     it('reverses to descending after clicking registration date again', () => {
@@ -230,29 +243,41 @@ describe('Owners list', () => {
             if (req.query.ordering === 'registration_date') {
                 req.alias = 'ascendingByRegistrationDate'
             }
-            req.reply({ statusCode: 200, body: ownerList })
+
+            req.reply({
+                statusCode: 200,
+                body: ownerList,
+            })
         })
 
-        cy.get('[data-cy="owner-sort-registration-date"]').click()
+        OwnersPage.sortByRegistrationDate().click()
 
         cy.wait('@ascendingByRegistrationDate')
-        cy.get('[data-cy="owner-sort-registration-date"]').find('.table__sort-indicator').should('contain', '↑')
+
+        OwnersPage.sortIndicatorFor(OwnersPage.sortByRegistrationDate)
+            .should('contain', '↑')
 
         cy.intercept('GET', API.owners, (req) => {
             if (req.query.ordering === '-registration_date') {
                 req.alias = 'descendingByRegistrationDate'
             }
-            req.reply({ statusCode: 200, body: ownerList })
+
+            req.reply({
+                statusCode: 200,
+                body: ownerList,
+            })
         })
 
-        cy.get('[data-cy="owner-sort-registration-date"]').click()
+        OwnersPage.sortByRegistrationDate().click()
 
         cy.wait('@descendingByRegistrationDate')
             .its('request.query')
-            .should('include', { ordering: '-registration_date' })
+            .should('include', {
+                ordering: '-registration_date',
+            })
     })
 
-    // Create 
+    // Create
 
     it('creates a new owner', () => {
         cy.intercept('POST', API.owners, {
@@ -264,40 +289,37 @@ describe('Owners list', () => {
             },
         }).as('createRequest')
 
-        cy.get('[data-cy="owner-new-button"]').click()
-        cy.contains('h2', 'New owner').should('be.visible')
+        OwnersPage.newOwnerButton().click()
 
-        fillField('owner-first-name', newOwner.newOwner.first_name)
-        fillField('owner-last-name', newOwner.newOwner.last_name)
-        fillField('owner-phone-number', newOwner.newOwner.phone_number)
-        fillField('owner-email', newOwner.newOwner.email)
-        fillField('owner-address', newOwner.newOwner.address)
+        OwnerForm.heading('New owner').should('be.visible')
+        OwnerForm.fillAll(newOwner.newOwner)
+        OwnerForm.submit()
 
-        cy.get('[data-cy="owner-form-submit"]').click()
+        cy.wait('@createRequest')
+            .its('request.body')
+            .should('deep.equal', newOwner.newOwner)
 
-        cy.wait('@createRequest').its('request.body').should('deep.equal', newOwner.newOwner)
-
-        cy.get('[data-cy="toast"]').should('contain.text', 'Owner added')
-        cy.contains('h2', 'New owner').should('not.exist')
+        OwnersPage.toast().should('contain.text', 'Owner added')
+        OwnerForm.heading('New owner').should('not.exist')
     })
 
     it('fills form with empty fields', () => {
         cy.intercept('POST', API.owners, cy.spy().as('createSpy'))
 
-        cy.get('[data-cy="owner-new-button"]').click()
-        cy.contains('h2', 'New owner').should('be.visible')
+        OwnersPage.newOwnerButton().click()
 
-        cy.get('[data-cy="owner-form-submit"]').click()
+        OwnerForm.heading('New owner').should('be.visible')
+        OwnerForm.submit()
 
-        cy.get('[data-cy="owner-first-name-error"]').should('be.visible')
-        cy.get('[data-cy="owner-last-name-error"]').should('be.visible')
-        cy.get('[data-cy="owner-phone-number-error"]').should('be.visible')
+        OwnerForm.firstNameError().should('be.visible')
+        OwnerForm.lastNameError().should('be.visible')
+        OwnerForm.phoneNumberError().should('be.visible')
 
         cy.get('@createSpy').should('not.have.been.called')
-        cy.contains('h2', 'New owner').should('be.visible')
+        OwnerForm.heading('New owner').should('be.visible')
     })
 
-    it('can not make same owners', () => {
+    it('cannot create duplicate owners', () => {
         cy.intercept('POST', API.owners, {
             statusCode: 400,
             body: {
@@ -305,75 +327,74 @@ describe('Owners list', () => {
                     code: 'ValidationError',
                     message: 'Validation failed',
                     details: {
-                        email: ['This email is already registered for this clinic'],
+                        email: [
+                            'This email is already registered for this clinic',
+                        ],
                     },
                 },
             },
         }).as('sameOwnerRequest')
 
-        cy.get('[data-cy="owner-new-button"]').click()
-        cy.contains('h2', 'New owner').should('be.visible')
+        OwnersPage.newOwnerButton().click()
 
-        fillField('owner-first-name', newOwner.newOwner.first_name)
-        fillField('owner-last-name', newOwner.newOwner.last_name)
-        fillField('owner-phone-number', newOwner.newOwner.phone_number)
-        fillField('owner-email', newOwner.newOwner.email)
-        fillField('owner-address', newOwner.newOwner.address)
-
-        cy.get('[data-cy="owner-form-submit"]').click()
+        OwnerForm.heading('New owner').should('be.visible')
+        OwnerForm.fillAll(newOwner.newOwner)
+        OwnerForm.submit()
 
         cy.wait('@sameOwnerRequest')
 
-        cy.get('[data-cy="owner-email-error"]')
+        OwnerForm.emailError()
             .should('be.visible')
             .and('contain.text', 'already registered')
 
-        cy.contains('h2', 'New owner').should('be.visible')
+        OwnerForm.heading('New owner').should('be.visible')
     })
 
-    // Edit 
+    // Edit
 
     it('edits an existing owner', () => {
-        cy.intercept('PATCH', API.ownerDetail, {
-            statusCode: 200,
-            body: { ...ownerList.results[0], phone_number: '+15550009999' },
-        }).as('updateRequest')
-
-        cy.contains('[data-cy="owner-row"]', 'Owens, Anna').within(() => {
-            cy.get('[data-cy="owner-edit-button"]').click()
-        })
-
-        cy.contains('h2', 'Edit owner').should('be.visible')
-        cy.get('[data-cy="owner-first-name"]').should('have.value', 'Anna')
-
-        fillField('owner-phone-number', '+15550009999')
-        cy.get('[data-cy="owner-form-submit"]').click()
-
-        cy.wait('@updateRequest')
-            .its('request.body')
-            .should('deep.include', { phone_number: '+15550009999' })
-
-        cy.get('[data-cy="toast"]').should('contain.text', 'Owner updated')
-        cy.contains('h2', 'Edit owner').should('not.exist')
-    })
-
-    it('cancel editing owner', () => {
         const owner = ownerList.results[0]
         const fullName = `${owner.last_name}, ${owner.first_name}`
 
-        cy.contains('[data-cy="owner-row"]', fullName).within(() => {
-            cy.get('[data-cy="owner-edit-button"]').click()
-        })
+        cy.intercept('PATCH', API.ownerDetail, {
+            statusCode: 200,
+            body: {
+                ...owner,
+                phone_number: '+15550009999',
+            },
+        }).as('updateRequest')
 
-        cy.contains('h2', 'Edit owner').should('be.visible')
+        OwnersPage.editButtonFor(fullName).click()
 
-        cy.get('[data-cy="owner-form-cancel"]').click()
+        OwnerForm.heading('Edit owner').should('be.visible')
+        OwnerForm.firstName().should('have.value', owner.first_name)
 
-        cy.contains('[data-cy="owner-row"]', fullName).should('be.visible')
+        cy.fillField('owner-phone-number', '+15550009999')
+        OwnerForm.submit()
 
+        cy.wait('@updateRequest')
+            .its('request.body')
+            .should('deep.include', {
+                phone_number: '+15550009999',
+            })
+
+        OwnersPage.toast().should('contain.text', 'Owner updated')
+        OwnerForm.heading('Edit owner').should('not.exist')
     })
 
-    // Delete 
+    it('cancels editing an owner', () => {
+        const owner = ownerList.results[0]
+        const fullName = `${owner.last_name}, ${owner.first_name}`
+
+        OwnersPage.editButtonFor(fullName).click()
+
+        OwnerForm.heading('Edit owner').should('be.visible')
+        OwnerForm.cancel()
+
+        OwnersPage.ownerRow(fullName).should('be.visible')
+    })
+
+    // Delete
 
     it('deletes an owner after confirming', () => {
         const owner = ownerList.results[0]
@@ -383,38 +404,37 @@ describe('Owners list', () => {
             statusCode: 204,
         }).as('deleteRequest')
 
-        cy.contains('[data-cy="owner-row"]', fullName).within(() => {
-            cy.get('[data-cy="owner-delete-button"]').click()
-        })
+        OwnersPage.deleteButtonFor(fullName).click()
 
         cy.contains('h2', 'Delete this owner?').should('be.visible')
         cy.contains(owner.first_name).should('be.visible')
+
         cy.get('@deleteRequest.all').should('have.length', 0)
 
         cy.get('[data-cy="confirm-dialog-confirm"]').click()
+
         cy.wait('@deleteRequest')
 
-        cy.get('[data-cy="toast"]')
-            .should('contain.text', `${owner.first_name} ${owner.last_name} removed`)
+        OwnersPage.toast()
+            .should(
+                'contain.text',
+                `${owner.first_name} ${owner.last_name} removed`,
+            )
 
         cy.contains('h2', 'Delete this owner?').should('not.exist')
     })
 
-    it('cancel deleting', () => {
+    it('cancels deleting an owner', () => {
         const owner = ownerList.results[1]
         const fullName = `${owner.last_name}, ${owner.first_name}`
 
-        cy.contains('[data-cy="owner-row"]', fullName).within(() => {
-            cy.get('[data-cy="owner-delete-button"]').click()
-        })
+        OwnersPage.deleteButtonFor(fullName).click()
 
         cy.contains('h2', 'Delete this owner?').should('be.visible')
         cy.contains(owner.first_name).should('be.visible')
 
         cy.get('[data-cy="confirm-dialog-cancel"]').click()
 
-        cy.contains('[data-cy="owner-row"]', fullName).should('be.visible')
+        OwnersPage.ownerRow(fullName).should('be.visible')
     })
-
-
 })

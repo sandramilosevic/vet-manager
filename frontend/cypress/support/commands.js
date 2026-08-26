@@ -98,3 +98,15 @@ Cypress.Commands.add('expectThrottled', (alias) => {
     cy.contains('button', /Try again in \d+s/).should('be.disabled')
     cy.contains('Request was throttled').should('be.visible')
 })
+
+Cypress.Commands.add('fillField', (dataCy, value) => {
+    cy.get(`[data-cy="${dataCy}"]`).then(($el) => {
+        const tagName = $el.prop('tagName').toLowerCase()
+
+        if (tagName === 'select') {
+            cy.wrap($el).select(value)
+        } else {
+            cy.wrap($el).clear().type(value)
+        }
+    })
+})
