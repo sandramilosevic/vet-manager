@@ -7,6 +7,50 @@
         "username": "vet@example.com",
         "password": "wrong-password"
     },
+    "nonExistentUser": {
+        "username": "doesnotexist@example.com",
+        "password": "password-password123"
+    },
+    "caseSensitiveUsername": {
+        "username": "VET@example.com",
+        "password": "password-password123"
+    },
+    "caseSensitivePassword": {
+        "username": "vet@example.com",
+        "password": "PASSWORD-PASSWORD123"
+    },
+    "leadingSpaceUsername": {
+        "username": "   vet@example.com",
+        "password": "password-password123"
+    },
+    "trailingSpaceUsername": {
+        "username": "vet@example.com   ",
+        "password": "password-password123"
+    },
+    "whitespaceOnlyUsername": {
+        "username": "   ",
+        "password": "password-password123"
+    },
+    "leadingSpacePassword": {
+        "username": "vet@example.com",
+        "password": "   password-password123"
+    },
+    "trailingSpacePassword": {
+        "username": "vet@example.com",
+        "password": "password-password123   "
+    },
+    "whitespaceOnlyPassword": {
+        "username": "vet@example.com",
+        "password": "   "
+    },
+    "sqlInjectionAttempt": {
+        "username": "' OR '1'='1",
+        "password": "' OR '1'='1"
+    },
+    "xssAttempt": {
+        "username": "<script>alert('xss')</script>",
+        "password": "password-password123"
+    },
     "jwtPayload": {
         "user_id": "1",
         "role": "ADMIN",

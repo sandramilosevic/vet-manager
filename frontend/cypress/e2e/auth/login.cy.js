@@ -2,10 +2,14 @@ import { API } from '../../support/api'
 import { LoginPage } from '../../pages/LoginPage'
 import loginData from '../../fixtures/auth/login.json'
 
+function stubInvalidLogin(alias = 'loginRequest') {
+    return cy.intercept('POST', API.login, {
+        statusCode: 401,
+        fixture: 'auth/login-invalid-credentials.json',
+    }).as(alias)
+}
+
 describe('Login', () => {
-    // visitClean wipes storage before the app's JS runs, so a leftover
-    // token from a previous test can't auto-redirect us away from /login
-    // before the test even gets a chance to assert anything.
     beforeEach(() => {
         LoginPage.visit()
     })
@@ -21,13 +25,31 @@ describe('Login', () => {
     })
 
     it('shows validation errors when submitting an empty form', () => {
-        // No intercept here on purpose: this is purely client-side
-        // validation, so nothing should ever hit the network.
         LoginPage.submit()
 
         cy.contains('Username is required').should('be.visible')
         cy.contains('Password is required').should('be.visible')
 
+        cy.url().should('include', '/login')
+    })
+
+    it('shows an error for empty username', () => {
+        const { validUser } = loginData
+
+        LoginPage.typePassword(validUser.password)
+        LoginPage.submit()
+
+        cy.contains('Username is required').should('be.visible')
+        cy.url().should('include', '/login')
+    })
+
+    it('shows an error for empty password', () => {
+        const { validUser } = loginData
+
+        LoginPage.typeUsername(validUser.username)
+        LoginPage.submit()
+
+        cy.contains('Password is required').should('be.visible')
         cy.url().should('include', '/login')
     })
 
@@ -59,23 +81,53 @@ describe('Login', () => {
         })
     })
 
-    it('shows an error message for invalid credentials', () => {
-        const { invalidUser } = loginData
+    const rejectedCredentialCases = [
+        { key: 'invalidUser', label: 'wrong password for an existing user' },
+        { key: 'nonExistentUser', label: 'a username that does not exist' },
+        { key: 'caseSensitiveUsername', label: 'username with different casing' },
+        { key: 'caseSensitivePassword', label: 'password with different casing' },
+        { key: 'leadingSpaceUsername', label: 'leading whitespace in username' },
+        { key: 'trailingSpaceUsername', label: 'trailing whitespace in username' },
+        { key: 'leadingSpacePassword', label: 'leading whitespace in password' },
+        { key: 'trailingSpacePassword', label: 'trailing whitespace in password' },
+    ]
 
-        cy.intercept('POST', API.login, {
-            statusCode: 401,
-            fixture: 'auth/login-invalid-credentials.json',
-        }).as('loginRequest')
+    rejectedCredentialCases.forEach(({ key, label }) => {
+        it(`rejects login with ${label}`, () => {
+            const credentials = loginData[key]
 
-        LoginPage.login(invalidUser.username, invalidUser.password)
+            stubInvalidLogin()
+            LoginPage.login(credentials.username, credentials.password)
 
-        cy.wait('@loginRequest')
+            cy.wait('@loginRequest')
+            cy.contains('Incorrect username or password.').should('be.visible')
+            LoginPage.errorBanner().should('contain.text', 'Incorrect username or password.')
 
-        cy.contains('Incorrect username or password.').should('be.visible')
-        LoginPage.errorBanner().should('contain.text', 'Incorrect username or password.')
+            cy.url().should('include', '/login')
+            LoginPage.submitButton().should('be.enabled')
+        })
+    })
 
+    it('shows an error for whitespace-only username', () => {
+        const { whitespaceOnlyUsername } = loginData
+
+        LoginPage.typeUsername(whitespaceOnlyUsername.username)
+        LoginPage.typePassword(whitespaceOnlyUsername.password)
+        LoginPage.submit()
+
+        cy.contains('Username is required').should('be.visible')
         cy.url().should('include', '/login')
-        LoginPage.submitButton().should('be.enabled')
+    })
+
+    it('sends a whitespace-only password to the server as a literal value', () => {
+        const { whitespaceOnlyPassword } = loginData
+
+        stubInvalidLogin()
+        LoginPage.login(whitespaceOnlyPassword.username, whitespaceOnlyPassword.password)
+
+        cy.wait('@loginRequest').its('request.body').should('deep.equal', whitespaceOnlyPassword)
+        cy.contains('Incorrect username or password.').should('be.visible')
+        cy.url().should('include', '/login')
     })
 
     it('disables login after too many failed attempts', () => {
@@ -94,47 +146,36 @@ describe('Login', () => {
         cy.expectThrottled('loginRequest')
     })
 
-    // SQL injection attempt 
     it('safely handles a SQL injection attempt without crashing or bypassing auth', () => {
-        // This proves the FRONTEND behaves correctly when fed an
-        // injection-style payload: it's sent as plain text, the app
-        // doesn't crash, and login is refused like any other bad
-        // credential. It does NOT prove the backend is immune to SQL
-        // injection — that's covered separately by
-        // backend/apps/accounts/tests/test_login_security.py, since
-        // Django's ORM (which parameterizes queries) is what actually
-        // provides that guarantee, not anything in this UI.
-        const injectionPayload = "' OR '1'='1"
+        const { sqlInjectionAttempt } = loginData
 
-        cy.intercept('POST', API.login, {
-            statusCode: 401,
-            fixture: 'auth/login-invalid-credentials.json',
-        }).as('loginRequest')
+        stubInvalidLogin()
+        LoginPage.login(sqlInjectionAttempt.username, sqlInjectionAttempt.password)
 
-        LoginPage.login(injectionPayload, injectionPayload)
-
-        cy.wait('@loginRequest')
-            .its('request.body')
-            .should('deep.equal', { username: injectionPayload, password: injectionPayload })
+        cy.wait('@loginRequest').its('request.body').should('deep.equal', sqlInjectionAttempt)
 
         cy.contains('Incorrect username or password.').should('be.visible')
         cy.url().should('include', '/login')
         LoginPage.submitButton().should('be.enabled')
     })
 
-    // Disabled account login 
-    it('shows the same generic error for a disabled account as for wrong credentials', () => {
-        // SimpleJWT's default behavior returns the identical
-        // "No active account with the given credentials" response for a
-        // deactivated (is_active=False) account as for a wrong password.
+    it('safely handles an XSS attempt without executing the script', () => {
+        const { xssAttempt } = loginData
 
+        stubInvalidLogin()
+        LoginPage.login(xssAttempt.username, xssAttempt.password)
+
+        cy.wait('@loginRequest').its('request.body').should('deep.equal', xssAttempt)
+
+        cy.get('script').should('not.exist')
+        cy.contains('Incorrect username or password.').should('be.visible')
+        cy.url().should('include', '/login')
+    })
+
+    it('shows the same generic error for a disabled account as for wrong credentials', () => {
         const { validUser } = loginData
 
-        cy.intercept('POST', API.login, {
-            statusCode: 401,
-            fixture: 'auth/login-invalid-credentials.json',
-        }).as('loginRequest')
-
+        stubInvalidLogin()
         LoginPage.login(validUser.username, validUser.password)
 
         cy.wait('@loginRequest')
@@ -143,7 +184,6 @@ describe('Login', () => {
         LoginPage.submitButton().should('be.enabled')
     })
 
-    //  Accessibility 
     describe('Accessibility', () => {
         it('associates visible labels with the username and password fields', () => {
             LoginPage.usernameInput()
@@ -156,15 +196,11 @@ describe('Login', () => {
         })
 
         it('marks required fields for assistive tech', () => {
-            LoginPage.usernameInput().should('have.attr', 'required')
-            LoginPage.passwordInput().should('have.attr', 'required')
+            LoginPage.usernameInput().should('have.attr', 'aria-required', 'true')
+            LoginPage.passwordInput().should('have.attr', 'aria-required', 'true')
         })
 
         it('keeps every control natively focusable in logical DOM order', () => {
-            // Real Tab-key traversal needs the cypress-real-events plugin;
-            // this checks the underlying contract that traversal depends
-            // on -- native, focusable elements in source order -- without
-            // adding a new dependency.
             cy.focused().should('not.exist')
 
             LoginPage.usernameInput().should('be.visible').focus().should('be.focused')
@@ -173,11 +209,7 @@ describe('Login', () => {
         })
 
         it('exposes the login error to assistive tech via role="alert"', () => {
-            cy.intercept('POST', API.login, {
-                statusCode: 401,
-                fixture: 'auth/login-invalid-credentials.json',
-            }).as('loginRequest')
-
+            stubInvalidLogin()
             LoginPage.login('vet@example.com', 'wrong-password')
             cy.wait('@loginRequest')
 
