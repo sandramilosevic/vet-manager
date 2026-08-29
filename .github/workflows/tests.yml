@@ -27,7 +27,7 @@ jobs:
 
     env:
       SECRET_KEY: ci-test-secret-key
-      DEBUG: 'False'
+      DEBUG: 'True'
       ALLOWED_HOSTS: localhost,127.0.0.1
       DB_NAME: vetmanager
       DB_USER: vetmanager
@@ -81,7 +81,7 @@ jobs:
 
     env:
       SECRET_KEY: ci-test-secret-key
-      DEBUG: 'False'
+      DEBUG: 'True'
       ALLOWED_HOSTS: localhost,127.0.0.1
       DB_NAME: vetmanager
       DB_USER: vetmanager
