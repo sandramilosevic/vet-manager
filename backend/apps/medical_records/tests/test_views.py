@@ -259,7 +259,11 @@ class TestMedicalRecordViews:
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
-        assert not MedicalRecord.objects.filter(id=medical_record.id).exists()
+        medical_record.refresh_from_db()
+        assert medical_record.is_deleted is True
+        # Soft delete: the row still exists, it's just excluded from
+        # active_objects, not physically removed.
+        assert MedicalRecord.objects.filter(id=medical_record.id).exists()
 
     def test_vet_cannot_delete_medical_record(
         self,
