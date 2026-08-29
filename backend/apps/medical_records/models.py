@@ -2,7 +2,7 @@ from django.db import models
 from apps.accounts.models import User
 from apps.pets.models import Pet
 from simple_history.models import HistoricalRecords
-from datetime import timezone
+from django.utils import timezone
 
 
 class ActiveMedicalRecordManager(models.Manager):

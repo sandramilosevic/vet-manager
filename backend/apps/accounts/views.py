@@ -30,7 +30,11 @@ from .filters import InvitationFilter
 from .models import Invitation, User
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.exceptions import TokenError
-from rest_framework.throttling import ScopedRateThrottle
+from rest_framework.throttling import (
+    ScopedRateThrottle,
+    AnonRateThrottle,
+    UserRateThrottle,
+)
 from rest_framework.filters import OrderingFilter
 from django_filters.rest_framework import DjangoFilterBackend
 import logging
@@ -117,9 +121,15 @@ class InvitationListCreateView(generics.ListCreateAPIView):
         # `invite-send` is 20/day. Applying it to GET as well would mean simply
         # opening the staff screen a few times exhausts an admin's ability to
         # invite anyone, so only the write path is scoped.
+        #
+        # NOTE: super().get_throttles() would still include ScopedRateThrottle
+        # from DEFAULT_THROTTLE_CLASSES, and it reads throttle_scope (a
+        # class-level attribute) regardless of HTTP method -- so GET would
+        # silently inherit the same 20/day cap. Building the list explicitly
+        # here keeps GET on the default anon/user throttles only.
         if self.request.method == "POST":
             return [ScopedRateThrottle()]
-        return super().get_throttles()
+        return [AnonRateThrottle(), UserRateThrottle()]
 
     def get_serializer_class(self):
         # The list must never expose `token` — InvitationSerializer includes it.

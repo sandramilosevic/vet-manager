@@ -6,13 +6,13 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('owners', '0008_owner_unique_email_per_clinic'),
+        ("owners", "0008_owner_unique_email_per_clinic"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='owner',
-            name='is_deleted',
+            model_name="owner",
+            name="is_deleted",
             field=models.BooleanField(default=False),
         ),
     ]

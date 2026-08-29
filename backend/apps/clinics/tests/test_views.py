@@ -330,7 +330,11 @@ class TestClinicDetailView:
         response = ClinicDetailView.as_view()(request, pk=clinic_a.pk)
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
-        assert not Clinic.objects.filter(pk=clinic_a.pk).exists()
+        clinic_a.refresh_from_db()
+        assert clinic_a.is_deleted is True
+        # Soft delete: the row still exists, it's just excluded from
+        # normal querysets, not physically removed.
+        assert Clinic.objects.filter(pk=clinic_a.pk).exists()
 
     def test_delete_as_non_admin_forbidden(self, factory, vet_a, clinic_a):
         """Verify non-admin roles cannot delete a clinic."""

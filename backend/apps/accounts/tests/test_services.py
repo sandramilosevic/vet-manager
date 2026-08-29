@@ -38,7 +38,7 @@ class TestSendInvitation:
 
     def test_inviter_without_clinic_raises(self, admin_user):
         admin_user.clinic = None
-        with pytest.raises(ValueError, match="assigned to a clinic"):
+        with pytest.raises(ValueError, match="assigned to an active clinic"):
             send_invitation(
                 email="new@example.com", clinic=None, role="VET", invited_by=admin_user
             )
