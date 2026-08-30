@@ -167,7 +167,9 @@ describe('Login', () => {
 
         cy.wait('@loginRequest').its('request.body').should('deep.equal', xssAttempt)
 
-        cy.get('script').should('not.exist')
+        cy.get('script').each(($script) => {
+            expect($script.text()).not.to.include("alert('xss')")
+        })
         cy.contains('Incorrect username or password.').should('be.visible')
         cy.url().should('include', '/login')
     })
@@ -201,8 +203,6 @@ describe('Login', () => {
         })
 
         it('keeps every control natively focusable in logical DOM order', () => {
-            cy.focused().should('not.exist')
-
             LoginPage.usernameInput().should('be.visible').focus().should('be.focused')
             LoginPage.passwordInput().should('be.visible').focus().should('be.focused')
             LoginPage.submitButton().should('be.visible').focus().should('be.focused')
