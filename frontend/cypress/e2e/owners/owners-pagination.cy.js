@@ -148,6 +148,24 @@ describe('Owners list pagination', () => {
         const owners = generateOwners(20)
 
         cy.intercept('GET', API.owners, (req) => {
+            if (req.query.last_name__icontains === 'Last1') {
+                req.alias = 'filteredRequest'
+
+                req.reply({
+                    statusCode: 200,
+                    body: {
+                        count: 11,
+                        next: null,
+                        previous: null,
+                        results: owners.filter((owner) =>
+                            owner.last_name.includes('Last1'),
+                        ),
+                    },
+                })
+
+                return
+            }
+
             if (!req.query.page || req.query.page === '1') {
                 req.alias = 'firstPage'
 
@@ -174,24 +192,6 @@ describe('Owners list pagination', () => {
                         next: null,
                         previous: `${API.owners}?page=1`,
                         results: owners.slice(PAGE_SIZE),
-                    },
-                })
-
-                return
-            }
-
-            if (req.query.last_name__icontains === 'Last1') {
-                req.alias = 'filteredRequest'
-
-                req.reply({
-                    statusCode: 200,
-                    body: {
-                        count: 11,
-                        next: null,
-                        previous: null,
-                        results: owners.filter((owner) =>
-                            owner.last_name.includes('Last1'),
-                        ),
                     },
                 })
             }

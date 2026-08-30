@@ -7,7 +7,6 @@ interface PaginationProps {
   hasNext: boolean
   hasPrevious: boolean
   onPageChange: (page: number) => void
-  /** Disables controls while a page is in flight. */
   busy?: boolean
 }
 
@@ -19,9 +18,10 @@ export function Pagination({
   onPageChange,
   busy = false,
 }: PaginationProps) {
-  if (count === 0) return null
-
   const totalPages = Math.max(1, Math.ceil(count / PAGE_SIZE))
+
+  if (totalPages <= 1) return null
+
   const first = (page - 1) * PAGE_SIZE + 1
   const last = Math.min(page * PAGE_SIZE, count)
 
@@ -37,12 +37,18 @@ export function Pagination({
         </span>
         <Button
           size="sm"
+          data-cy="pagination-previous"
           onClick={() => onPageChange(page - 1)}
           disabled={!hasPrevious || busy}
         >
           ← Previous
         </Button>
-        <Button size="sm" onClick={() => onPageChange(page + 1)} disabled={!hasNext || busy}>
+        <Button
+          size="sm"
+          data-cy="pagination-next"
+          onClick={() => onPageChange(page + 1)}
+          disabled={!hasNext || busy}
+        >
           Next →
         </Button>
       </div>
