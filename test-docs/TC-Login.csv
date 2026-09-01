@@ -1,0 +1,174 @@
+ID,Scenario ID,Test Case Name,Precondition,Steps,Test Data / Input,Expected Result,Priority,Severity,Type,Automated
+TC-LOGIN-01,SCN-LOGIN-01,Login form displays correctly,User is on the /login page,"1. Open /login
+2. Observe the form",N/A,"Heading, username field, password field (masked), Sign in button (enabled), 
+and Forgot password link (href=/forgot-password) are all visible",Medium,Low,Functional,"Yes,
+login.cy.js"
+TC-LOGIN-02,SCN-LOGIN-01,Successful login with correct credentials,"Account is active, user exists in the system","1. Open /login
+2. Enter correct username and password
+3. Click Sign in","Test data: validUser (login.json)
+username: vet@example.com
+password: password-password123","User is logged in, access/refresh tokens are stored, redirected to dashboard",High,High,Positive,"Yes,
+login.cy.js,
+test_jwt.py"
+TC-LOGIN-03,SCN-LOGIN-02,Login with wrong password for an existing user,User exists in the system,"1. Open /login
+2. Enter correct username, wrong password
+3. Click Sign in","Test data: invalidUser (login.json)
+username: vet@example.com
+password: wrong-password","""Incorrect username or password."" is shown, user stays on /login, submit button remains enabled",High,High,Negative,"Yes,
+login.cy.js"
+TC-LOGIN-04,SCN-LOGIN-02,Login with a username that does not exist,Given username is not registered in the system,"1. Open /login
+2. Enter a non-existent username and any password
+3. Click Sign in","Test data: nonExistentUser (login.json)
+username: doesnotexist@example.com
+password: password-password123","""Incorrect username or password."" is shown (same generic message as wrong password), user stays on /login",High,High,Negative,"Yes,
+login.cy.js"
+TC-LOGIN-05,SCN-LOGIN-03,Submitting login form with both fields empty,User is on the /login page,"1. Open /login
+2. Leave both fields empty
+3. Click Sign in",N/A - no request is sent,"""Username is required"" and ""Password is required"" are shown, user stays on /login",High,Medium,Boundary/Edge,"Yes,
+login.cy.js"
+TC-LOGIN-06,SCN-LOGIN-03,Submitting login form with empty username only,User is on the /login page,"1. Open /login
+2. Enter password only, leave username empty
+3. Click Sign in","Test data: validUser.password (login.json)
+password: password-password123","""Username is required"" is shown, no request is sent, user stays on /login",Medium,Medium,Boundary/Edge,"Yes,
+login.cy.js"
+TC-LOGIN-07,SCN-LOGIN-03,Submitting login form with empty password only,User is on the /login page,"1. Open /login
+2. Enter username only, leave password empty
+3. Click Sign in","Test data: validUser.username (login.json)
+username: vet@example.com","""Password is required"" is shown, no request is sent, user stays on /login",Medium,Medium,Boundary/Edge,"Yes,
+login.cy.js"
+TC-LOGIN-08,SCN-LOGIN-04,Login disabled after too many failed attempts,"Multiple failed login attempts 
+already made for this user (rate limit reached)","1. Open /login
+2. Enter a valid username and any password
+3. Click Sign in","Mocked response: 429, header retry-after: 30, 
+fixture throttled-error.json","Form shows throttled state (submit disabled / cooldown message), matching cy.expectThrottled behavior",High,Medium,Negative,"Yes,
+login.cy.js"
+TC-LOGIN-09,SCN-LOGIN-05,SQL injection attempt is safely rejected,User is on the /login page,"1. Open /login
+2. Enter SQL injection string in both username and password
+3. Click Sign in","Test data: sqlInjectionAttempt (login.json)
+username/password: ' OR '1'='1","Payload is sent as plain text (not executed), ""Incorrect username or password.""
+ is shown, app does not crash, user stays on /login",High,High,Security,Planned
+TC-LOGIN-10,SCN-LOGIN-05,XSS attempt is safely rejected,User is on the /login page,"1. Open /login
+2. Enter <script>alert('xss')</script> as username
+3. Click Sign in","Test data: xssAttempt (login.json)
+username: <script>alert('xss')</script>","Payload is sent as plain text and rendered as inert text on the page (React escapes it); none of the page's existing <script> tags contain the injected payload, ""Incorrect username or password."" is shown",High,High,Security,"Yes,
+login.cy.js"
+TC-LOGIN-11,SCN-LOGIN-06,Disabled account shows same generic error as wrong credentials,User account exists but is_active=False,"1. Open /login
+2. Enter valid username/password of a disabled account
+3. Click Sign in","Test data: validUser (login.json), mocked as 
+401 login-invalid-credentials.json","""Incorrect username or password."" is shown (identical to wrong-password case, 
+does not reveal account is disabled), user stays on /login",High,High,Security,Planned
+TC-LOGIN-12,SCN-LOGIN-07,Login with username case sensitivity,User exists with username vet@example.com,"1. Open /login
+2. Enter username in different casing, correct password
+3. Click Sign in","Test data: caseSensitiveUsername (login.json)
+username: VET@example.com
+password: password-password123","""Incorrect username or password."" is shown, user stays on /login",Medium,Medium,Negative,"Yes,
+login.cy.js"
+TC-LOGIN-13,SCN-LOGIN-07,Login with password case sensitivity,User exists with password password-password123,"1. Open /login
+2. Enter correct username, password in different casing
+3. Click Sign in","Test data: caseSensitivePassword (login.json)
+username: vet@example.com
+password: PASSWORD-PASSWORD123","""Incorrect username or password."" is shown, user stays on /login",Medium,Medium,Negative,"Yes,
+login.cy.js"
+TC-LOGIN-14,SCN-LOGIN-07,Login with leading space in username,User is on the /login page,"1. Open /login
+2. Enter username with leading spaces, correct password
+3. Click Sign in","Test data: leadingSpaceUsername (login.json)
+username: '   vet@example.com'
+password: password-password123","""Incorrect username or password."" is shown (value sent as-is, not trimmed before send), 
+user stays on /login",Low,Low,Negative,"Yes,
+login.cy.js"
+TC-LOGIN-15,SCN-LOGIN-07,Login with trailing space in username,User is on the /login page,"1. Open /login
+2. Enter username with trailing spaces, correct password
+3. Click Sign in","Test data: trailingSpaceUsername (login.json)
+username: 'vet@example.com   '
+password: password-password123","""Incorrect username or password."" is shown, user stays on /login",Low,Low,Negative,"Yes,
+login.cy.js"
+TC-LOGIN-16,SCN-LOGIN-07,Login with leading space in password,User is on the /login page,"1. Open /login
+2. Enter correct username, password with leading spaces
+3. Click Sign in","Test data: leadingSpacePassword (login.json)
+username: vet@example.com
+password: '   password-password123'","""Incorrect username or password."" is shown, user stays on /login",Low,Low,Negative,"Yes,
+login.cy.js"
+TC-LOGIN-17,SCN-LOGIN-07,Login with trailing space in password,User is on the /login page,"1. Open /login
+2. Enter correct username, password with trailing spaces
+3. Click Sign in","Test data: trailingSpacePassword (login.json)
+username: vet@example.com
+password: 'password-password123   '","""Incorrect username or password."" is shown, user stays on /login",Low,Low,Negative,"Yes,
+login.cy.js"
+TC-LOGIN-18,SCN-LOGIN-07,Login with whitespace-only username,User is on the /login page,"1. Open /login
+2. Enter only spaces as username, valid password
+3. Click Sign in","Test data: whitespaceOnlyUsername (login.json)
+username: '   '
+password: password-password123","""Username is required"" is shown (username field is trimmed by the schema), 
+no request is sent, user stays on /login",Medium,Low,Boundary/Edge,"Yes,
+login.cy.js"
+TC-LOGIN-19,SCN-LOGIN-07,Login with whitespace-only password,User is on the /login page,"1. Open /login
+2. Enter valid username, only spaces as password
+3. Click Sign in","Test data: whitespaceOnlyPassword (login.json)
+username: vet@example.com
+password: '   '","Password field is NOT trimmed by the schema - the literal spaces are sent to the server, 
+which returns ""Incorrect username or password.""",Medium,Low,Boundary/Edge,"Yes,
+login.cy.js"
+TC-LOGIN-20,SCN-LOGIN-08,Username and password fields have associated visible labels,User is on the /login page,"1. Open /login
+2. Inspect the id of each input and the matching label[for] element",N/A,"Each input has an id, and a visible <label for=""...""> element exists referencing it",Medium,Medium,Accessibility,"Yes,
+login.cy.js"
+TC-LOGIN-21,SCN-LOGIN-08,Required fields are marked for assistive technology,User is on the /login page,"1. Open /login
+2. Inspect username and password input attributes",N/A,"Both inputs have aria-required=""true"" (native HTML required attribute is not used by this form)",Medium,Medium,Accessibility,"Yes,
+login.cy.js"
+TC-LOGIN-22,SCN-LOGIN-08,All login controls are keyboard-focusable in logical order,User is on the /login page,"1. Open /login
+2. Focus username, password, and submit button individually",N/A,"Username, password, and submit button are each natively focusable, in source/DOM order. Note: the username field autofocuses on page load.",Medium,Low,Accessibility,"Yes,
+login.cy.js"
+TC-LOGIN-23,SCN-LOGIN-08,"Login error is exposed to assistive technology via role=""alert""",User is on the /login page,"1. Open /login
+2. Submit invalid credentials
+3. Inspect the error banner","username: vet@example.com
+password: wrong-password","Error banner is present with role=""alert"" and is visible, so screen readers announce it",Medium,Medium,Accessibility,"Yes,
+login.cy.js"
+TC-LOGIN-24,SCN-LOGIN-09,JWT contains correct role and clinic_id for an admin user,"Admin user exists, assigned to a clinic","1. Generate token via MyTokenObtainPairSerializer.get_token(admin_user)
+2. Inspect token claims","admin_user fixture, clinic_a fixture","token['role'] == 'ADMIN', token['clinic_id'] == clinic_a.id, token['email'] == admin_user.email",High,Medium,Positive,"Yes,
+test_jwt.py"
+TC-LOGIN-25,SCN-LOGIN-09,JWT contains correct claims for a vet-role user,"Vet user exists, assigned to a clinic","1. Generate token via MyTokenObtainPairSerializer.get_token(vet_user)
+2. Inspect token claims","vet_user fixture, clinic_a fixture","token['role'] == 'VET', token['clinic_id'] == clinic_a.id",Medium,Medium,Positive,"Yes,
+test_jwt.py"
+TC-LOGIN-26,SCN-LOGIN-09,JWT clinic_id is null when the user has no clinic,Admin user exists with clinic set to None,"1. Set admin_user.clinic = None and save
+2. Generate token
+3. Inspect claims",admin_user fixture (clinic removed),token['clinic_id'] is None (does not crash or default to a wrong value),Medium,High,Boundary/Edge,"Yes,
+test_jwt.py"
+TC-LOGIN-27,SCN-LOGIN-09,JWT claims differ between users from different clinics,Two admin users exist in two different clinics,"1. Generate tokens for admin_user and other_clinic_admin
+2. Compare clinic_id claims","admin_user fixture, other_clinic_admin fixture",token_a['clinic_id'] != token_b['clinic_id'] (claim is not hardcoded/shared),Medium,High,Security,"Yes,
+test_jwt.py"
+TC-LOGIN-28,SCN-LOGIN-10,Session remains valid after a full page reload,User is already authenticated (valid tokens in localStorage),"1. Log in and land on /owners
+2. Reload the page",N/A - uses cy.loginAs(),"User stays on /owners after reload, is not redirected to /login, /me request succeeds",Medium,Medium,Positive,Planned
+TC-LOGIN-29,SCN-LOGIN-10,Stored access token is reused for subsequent API calls,User is already authenticated,"1. Log in and land on /owners
+2. Navigate to /owners again (not a reload)
+3. Inspect the outgoing request",N/A - uses cy.loginAs(),"Request to the owners endpoint includes an Authorization: 
+Bearer <token> header, login form is not shown again",Medium,Medium,Positive,Planned
+TC-LOGIN-30,SCN-LOGIN-11,Unauthenticated visitor is redirected from a protected page to /login,No tokens present in localStorage,1. Directly visit /owners without logging in,N/A,User is redirected to /login,High,Medium,Security,Planned
+TC-LOGIN-31,SCN-LOGIN-11,User is redirected back to the originally requested page after login,"No tokens present, user attempts to visit a protected page","1. Visit /owners (redirected to /login)
+2. Log in with valid credentials",Test data: validUser (login.json),"After successful login, user lands on /owners (not the default dashboard)",Medium,Low,Positive,Planned
+TC-LOGIN-32,SCN-LOGIN-11,Invalid/corrupted token is cleared instead of showing a broken page,localStorage contains a malformed access/refresh token,1. Visit /owners with an invalid token already set in localStorage,"access: 'not-a-real-jwt', refresh: 'also-not-real'",User is redirected to /login instead of seeing a broken protected page,Medium,High,Negative,Planned
+TC-LOGIN-33,SCN-LOGIN-12,Logout clears local tokens and redirects to /login,User is authenticated,"1. Log in and land on /owners
+2. Click the logout button",N/A - uses cy.loginAs(),"Logout request is sent with the refresh token, localStorage tokens 
+are cleared, user is redirected to /login",High,Medium,Positive,Planned
+TC-LOGIN-34,SCN-LOGIN-12,Local session is cleared even if the logout request fails,User is authenticated,"1. Log in
+2. Mock the logout endpoint to fail (500)
+3. Click the logout button",N/A - uses cy.loginAs(),"Local tokens are still cleared and user is redirected to /login, despite the failed server call",Medium,Medium,Negative,Planned
+TC-LOGIN-35,SCN-LOGIN-12,Protected pages are blocked again after logout,User logged out in the previous step,"1. Log out
+2. Attempt to visit /owners directly",N/A,"User is redirected to /login, cannot access /owners with the old session",High,Medium,Security,Planned
+TC-LOGIN-36,SCN-LOGIN-13,Generic error message is shown on a 500 server error,User is on the /login page,"1. Mock the login endpoint to return 500
+2. Submit valid credentials","Test data: validUser (login.json), mocked 500 response","""The server encountered an error. Please try again."" 
+is shown (NOT the invalid-credentials message), submit button remains enabled",Medium,Medium,Negative,Planned
+TC-LOGIN-37,SCN-LOGIN-13,Message is shown when the network is unreachable,User is on the /login page,"1. Force a network error on the login request (forceNetworkError)
+2. Submit valid credentials",Test data: validUser (login.json),"""Cannot reach the server. Check your connection and that the API is running."" is shown",Medium,Medium,Negative,Planned
+TC-LOGIN-38,SCN-LOGIN-13,Message is shown when the login request times out,User is on the /login page,"1. Delay the login response by 30s
+2. Submit valid credentials
+3. Wait",Test data: validUser (login.json),"""The request timed out."" is shown",Low,Low,Negative,Planned
+TC-LOGIN-39,SCN-LOGIN-13,Submit button is not stuck in a loading state after a failed request,User is on the /login page,"1. Mock login endpoint to return 500
+2. Submit valid credentials
+3. Wait for the response",Test data: validUser (login.json),"Submit button returns to enabled state, is not stuck disabled/loading",Low,Low,Negative,Planned
+TC-LOGIN-40,SCN-LOGIN-14,Login form is usable on a mobile viewport,User is on the /login page,"1. Set viewport to a mobile size (e.g. iphone-x)
+2. Check that all form elements are visible and usable
+3. Complete a login",Test data: validUser (login.json),"Form fields and submit button are visible, not cut off or overlapping, login completes successfully",Medium,Low,Usability,Planned
+TC-LOGIN-41,SCN-LOGIN-14,Login form is usable on a tablet viewport,User is on the /login page,"1. Set viewport to a tablet size (e.g. ipad-2)
+2. Check layout and usability",N/A,Form remains usable and correctly laid out,Low,Low,Usability,Planned
+TC-LOGIN-42,SCN-LOGIN-15,Login functions correctly in Chrome,User is on the /login page in Chrome,1. CI matrix runs the full login.cy.js suite once per browser,N/A,All login test cases pass in Chrome,Medium,Low,Compatibility,Planned
+TC-LOGIN-43,SCN-LOGIN-15,Login functions correctly in Firefox,User is on the /login page in Firefox,1. CI matrix runs the full login.cy.js suite once per browser,N/A,All login test cases pass in Firefox,Low,Low,Compatibility,Planned
+TC-LOGIN-44,SCN-LOGIN-15,Login functions correctly in Edge,User is on the /login page in Edge,1. CI matrix runs the full login.cy.js suite once per browser,N/A,All login test cases pass in Edge,Low,Low,Compatibility,Planned

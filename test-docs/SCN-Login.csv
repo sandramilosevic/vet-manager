@@ -1,0 +1,16 @@
+ID,Scenario
+SCN-LOGIN-01,User logs in successfully with valid credentials
+SCN-LOGIN-02,User attempts to log in with incorrect credentials
+SCN-LOGIN-03,User submits the login form with empty/missing fields
+SCN-LOGIN-04,System locks out login after multiple failed attempts - throttling
+SCN-LOGIN-05,"System prevents login form abuse (XSS, SQL injection)"
+SCN-LOGIN-06,System handles a disabled account attempting to log in
+SCN-LOGIN-07,"System handles unusual input in credential fields (case sensitivity, whitespace, special characters)"
+SCN-LOGIN-08,"Login page is accessible (screen reader support, labels, keyboard focus)"
+SCN-LOGIN-09,JWT token issued after login contains the correct user claims
+SCN-LOGIN-10,Session/token remains valid across page reloads and subsequent requests
+SCN-LOGIN-11,User cannot access protected pages without authentication
+SCN-LOGIN-12,User is logged out and session/token is invalidated correctly
+SCN-LOGIN-13,Login form handles server/network errors gracefully
+SCN-LOGIN-14,Login page displays and functions correctly across different screen sizes (responsive)
+SCN-LOGIN-15,Login page functions correctly across different browsers
