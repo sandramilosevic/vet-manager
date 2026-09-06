@@ -113,7 +113,7 @@ export function AppShell() {
         </nav>
 
         <div className="sidebar__footer">
-          <Button variant="ghost" size="sm" block onClick={() => setConfirmLogout(true)}>
+          <Button variant="ghost" size="sm" block data-cy="logout-button" onClick={() => setConfirmLogout(true)}>
             Sign out
           </Button>
         </div>

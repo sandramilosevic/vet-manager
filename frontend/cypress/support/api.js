@@ -13,4 +13,5 @@ export const API = {
     acceptInvitation: '**/api/v1/accounts/invitations/accept/',
     owners: '**/api/v1/owners/**',
     ownerDetail: '**/api/v1/owners/*/',
+    logout: '**/api/v1/accounts/logout/',
 }
