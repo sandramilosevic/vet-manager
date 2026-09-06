@@ -1,7 +1,7 @@
 import { API } from '../../support/api'
 
 describe('Logout', () => {
-    // TC-33 - logout clears local tokens and redirects to /login.
+    // logout clears local tokens and redirects to /login.
     it('clears local tokens and redirects to /login on logout', () => {
         cy.loginAs('/owners')
         cy.intercept('POST', API.logout, { statusCode: 200 }).as('logoutRequest')
@@ -17,7 +17,7 @@ describe('Logout', () => {
         })
     })
 
-    // TC-34 - the local session is cleared even if the server-side logout
+    // the local session is cleared even if the server-side logout
     // call fails, so the user is never trapped in a logged-in UI with a dead token.
     it('still clears the local session even if the logout request fails', () => {
         cy.loginAs('/owners')
@@ -31,7 +31,7 @@ describe('Logout', () => {
         })
     })
 
-    // TC-35 - after logout, protected pages are blocked again, same as
+    // after logout, protected pages are blocked again, same as
     // for a visitor who was never authenticated.
     it('blocks access to protected pages again after logout', () => {
         cy.loginAs('/owners')

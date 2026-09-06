@@ -9,7 +9,7 @@ describe('Session persistence', () => {
         }).as('ownersRequest')
     })
 
-    // TC-28 — session survives a full page reload
+    // session survives a full page reload
     it('keeps the user signed in after a page reload', () => {
         cy.loginAs('/owners')
         cy.wait('@ownersRequest')
@@ -36,7 +36,7 @@ describe('Session persistence', () => {
         })
     })
 
-    // TC-29 — the persisted token keeps being sent on subsequent API calls
+    // the persisted token keeps being sent on subsequent API calls
     it('reuses the stored token as the Authorization header on later requests', () => {
         cy.loginAs('/owners')
         cy.wait('@ownersRequest')

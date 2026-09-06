@@ -2,7 +2,7 @@ import { API } from '../../support/api'
 import ownerList from '../../fixtures/owners/owners-list.json'
 
 describe('Route protection', () => {
-    // TC-30 — unauthenticated users are bounced to /login and the app
+    // unauthenticated users are bounced to /login and the app
     // remembers where they were headed so login can send them back.
     it('redirects an unauthenticated visitor from a protected page to /login', () => {
         cy.visitClean('/owners')
@@ -41,7 +41,7 @@ describe('Route protection', () => {
         })
     })
 
-    // TC-31 — a role that isn't allowed on a route sees the cosmetic
+    //  a role that isn't allowed on a route sees the cosmetic
     // "no access" guard instead of the page content. The real boundary is
     // the backend's permission classes; this only checks the UI hides it.
     it('blocks a role that is not allowed on a role-restricted route', () => {
@@ -60,7 +60,7 @@ describe('Route protection', () => {
         cy.contains("You don't have access to this page").should('not.exist')
     })
 
-    // TC-32 — an already-authenticated user shouldn't be able to land back
+    // an already-authenticated user shouldn't be able to land back
     // on the login screen; they get redirected to the dashboard instead.
     it('redirects an already-authenticated user away from /login', () => {
         cy.loginAs('/')
