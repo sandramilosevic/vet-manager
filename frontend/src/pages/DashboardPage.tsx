@@ -207,7 +207,7 @@ export function DashboardPage() {
             <LoadingState label="Loading recent visits…" />
           ) : records.isError ? (
             <ErrorState error={records.error} onRetry={() => records.refetch()} />
-          ) : (records.data?.results.length ?? 0) === 0 ? (
+          ) : (records.data?.results?.length ?? 0) === 0 ? (
             <EmptyState
               icon="☰"
               title="No visits recorded yet"
@@ -229,7 +229,7 @@ export function DashboardPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {records.data?.results.slice(0, 8).map((record) => (
+                  {records.data?.results?.slice(0, 8).map((record) => (
                     <tr key={record.id}>
                       <td className="nowrap">{formatDate(record.visit_date)}</td>
                       <td className="table__primary">
